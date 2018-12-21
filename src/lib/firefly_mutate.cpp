@@ -1,0 +1,331 @@
+/*
+        PSOVina version 1.0                     Date: 26/11/2014
+
+        This file is revised from mutate.cpp in AutoDock Vina.
+
+        Authors: Marcus C. K. Ng  <marcus.ckng@gmail.com>
+
+                 Shirley W. I. Siu <shirleysiu@umac.mo>
+
+
+        Computational Biology and Bioinformatics Lab
+
+        University of Macau
+
+        http://cbbio.cis.umac.mo
+
+*/
+/*
+
+   Copyright (c) 2006-2010, The Scripps Research Institute
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+   Author: Dr. Oleg Trott <ot14@columbia.edu>, 
+           The Olson Lab, 
+           The Scripps Research Institute
+
+*/
+
+#include "firefly_mutate.h"
+
+sz firefly_count_mutable_entities(const conf &c)
+{
+	sz counter = 0;
+	VINA_FOR_IN(i, c.ligands)
+	counter += 2 + c.ligands[i].torsions.size();
+	VINA_FOR_IN(i, c.flex)
+	counter += c.flex[i].torsions.size();
+	return counter;
+}
+
+void firefly_mutate_conf(output_type &candidate, const model &m, fl amplitude, rng &generator, firefly *fireflies, const precalculate &p, const igrid &ig, change &g, const vec &v, quasi_newton &quasi_newton_par, int step)
+{ // ONE OF: 2A for position, similar amp for orientation, randomize torsion
+	//conf c = candidate.c;
+	sz mutable_entities_num = firefly_count_mutable_entities(candidate.c);
+	if (mutable_entities_num == 0)
+		return;
+	int which_int = random_int(0, int(mutable_entities_num - 1), generator);
+	VINA_CHECK(which_int >= 0);
+	sz which = sz(which_int);
+	VINA_CHECK(which < mutable_entities_num);
+
+	int y;
+	VINA_FOR_IN(i, candidate.c.ligands)
+	{
+
+		model tmp_m = m;
+		const vec authentic_v(1000, 1000, 1000);
+
+		//Take part the position (either position or orientation or torsion)
+		if (which == 0)
+		{
+
+			//loop for each firefly
+			for (y = 0; y < fireflies->number; y++)
+			{
+
+				candidate.c.ligands[i].rigid.position = fireflies->getCurrentPosition(y);
+				candidate.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(y);
+				for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+					candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(i, z);
+
+				//local search
+				quasi_newton_par(tmp_m, p, ig, candidate, g, v);
+
+				fireflies->updateCurrentFit(y, candidate.e);
+
+				//set the personal best(energy value and position);
+				/*if(candidate.e < particle->getPersonalBest(y))
+					{
+
+						particle->updatePersonalBest(y,candidate.e);
+
+						particle->updateBestPosition(y,candidate.c.ligands[i].rigid.position);
+						particle->updateBestOrientation(y,candidate.c.ligands[i].rigid.orientation);
+						for(int z=0;z<candidate.c.ligands[i].torsions.size();z++)
+							particle->updateBestTorsion(y, candidate.c.ligands[i].torsions[z],z);
+							
+						//set the global best(energy value and position);
+						if(candidate.e < firefly::gbest_fit)
+						{
+							//std::cout << "current_P:" << candidate.e << "	quasi_e:"<<candidate.e << "	the current best_P:" << firefly::gbest_fit<<"	Current number steps" <<step <<'\n';
+							particle->updateGlobalBest(y);
+							
+							firefly::gbest_position = candidate.c.ligands[i].rigid.position;
+							firefly::gbest_orientation = candidate.c.ligands[i].rigid.orientation;
+							for(int z=0;z<candidate.c.ligands[i].torsions.size();z++)
+								firefly::gbest_torsion[z] = candidate.c.ligands[i].torsions[z];
+						}
+					}
+					
+					
+					
+					//update each particle in every dimension
+					particle->updateVelocity(generator,y);
+					//compute the new position;
+					particle->computeNewPositions(y);*/
+
+				if (candidate.e < firefly::gbest_fit)
+				{
+					//std::cout << "current_P:" << candidate.e << "	quasi_e:"<<candidate.e << "	the current best_P:" << firefly::gbest_fit<<"	Current number steps" <<step <<'\n';
+					fireflies->updateGlobalBest(y);
+
+					firefly::gbest_position = candidate.c.ligands[i].rigid.position;
+					firefly::gbest_orientation = candidate.c.ligands[i].rigid.orientation;
+					for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+						firefly::gbest_torsion[z] = candidate.c.ligands[i].torsions[z];
+				}
+			}
+
+			int order[fireflies->number];
+			for (int i = 0; i < fireflies->number; i++)
+				order[i] = i;
+
+			for (int t = 0; t < fireflies->number - 1; t++)
+				for (int u = t + 1; u < fireflies->number; u++)
+					if (fireflies->getCurrentFit(t) > fireflies->getCurrentFit(u))
+					{
+						int temp = order[t];
+						order[t] = order[u];
+						order[u] = temp;
+					}
+
+			for (int k = 0; i < fireflies->number; i++)
+				for (int j = 0; j < fireflies->number; j++)
+					if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(order[j]))
+					{
+						fireflies->moveFireflyPosition(j, k, generator);
+					}
+
+			for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+				candidate.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
+			candidate.c.ligands[i].rigid.orientation = firefly::gbest_orientation;
+			candidate.c.ligands[i].rigid.position = firefly::gbest_position;
+			return;
+		}
+
+		--which;
+		//Take part orientation (either position or orientation or torsion)
+		if (which == 0)
+		{
+			fl gr = m.gyration_radius(i);
+			if (gr > epsilon_fl)
+			{ // FIXME? just doing nothing for 0-radius molecules. do some other mutation?
+
+				for (y = 0; y < fireflies->number; y++)
+				{
+
+					candidate.c.ligands[i].rigid.position = fireflies->getCurrentPosition(y);
+					candidate.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(y);
+					for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+						candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(i, z);
+
+					quasi_newton_par(tmp_m, p, ig, candidate, g, v);
+
+					fireflies->updateCurrentFit(y, candidate.e);
+
+					//set the personal best(energy value and position);
+					/*if(candidate.e < particle->getPersonalBest(y))
+						{
+							
+							particle->updatePersonalBest(y,candidate.e);
+							
+							particle->updateBestPosition(y,candidate.c.ligands[i].rigid.position);
+							particle->updateBestOrientation(y,candidate.c.ligands[i].rigid.orientation);
+							for(int z=0;z<candidate.c.ligands[i].torsions.size();z++)
+								particle->updateBestTorsion(y, candidate.c.ligands[i].torsions[z],z);
+
+							//set the global best(energy value and position);
+							if(candidate.e< firefly::gbest_fit)
+							{
+								
+								//std::cout << "current_O:" << candidate.e << "	quasi_e:"<<candidate.e <<"	the current best_O:" << firefly::gbest_fit<<"	Current number steps"<<step<<'\n';
+		
+								particle->updateGlobalBest(y);						
+
+								firefly::gbest_position = candidate.c.ligands[i].rigid.position;
+								firefly::gbest_orientation = candidate.c.ligands[i].rigid.orientation;
+								for(int z=0;z<candidate.c.ligands[i].torsions.size();z++)
+									firefly::gbest_torsion[z] = candidate.c.ligands[i].torsions[z];
+							}
+						}
+
+			
+					//update each particle in every dimension
+					particle->updateVelocityO(generator,y);
+					//compute the new position;
+					particle->computeNewOrientation(y);*/
+
+					if (candidate.e < firefly::gbest_fit)
+					{
+
+						//std::cout << "current_O:" << candidate.e << "	quasi_e:"<<candidate.e <<"	the current best_O:" << firefly::gbest_fit<<"	Current number steps"<<step<<'\n';
+
+						fireflies->updateGlobalBest(y);
+
+						firefly::gbest_position = candidate.c.ligands[i].rigid.position;
+						firefly::gbest_orientation = candidate.c.ligands[i].rigid.orientation;
+						for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+							firefly::gbest_torsion[z] = candidate.c.ligands[i].torsions[z];
+					}
+				}
+
+				for (int k = 0; i < fireflies->number; k++)
+					for (int j = 0; j < fireflies->number; j++)
+						if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(j))
+						{
+							fireflies->moveFireflyOrientation(k, j, generator);
+						}
+			}
+
+			for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+				candidate.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
+			candidate.c.ligands[i].rigid.orientation = firefly::gbest_orientation;
+			candidate.c.ligands[i].rigid.position = firefly::gbest_position;
+			return;
+		}
+
+		/*Torsions*/
+		--which;
+		if (which < candidate.c.ligands[i].torsions.size())
+		{
+
+			for (y = 0; y < fireflies->number; y++)
+			{
+
+				candidate.c.ligands[i].rigid.position = fireflies->getCurrentPosition(y);
+				candidate.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(y);
+				for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+					candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(i, z);
+
+				quasi_newton_par(tmp_m, p, ig, candidate, g, v);
+
+				fireflies->updateCurrentFit(y, candidate.e);
+
+				//set the personal best(energy value and position);
+				/*if(candidate.e < particle->getPersonalBest(y))
+					{
+						particle->updatePersonalBest(y,candidate.e);
+						
+						particle->updateBestPosition(y,candidate.c.ligands[i].rigid.position);
+						particle->updateBestOrientation(y,candidate.c.ligands[i].rigid.orientation);
+						for(int z=0;z<candidate.c.ligands[i].torsions.size();z++)
+							particle->updateBestTorsion(y, candidate.c.ligands[i].torsions[z],z);
+						
+						//set the global best(energy value and position);
+						if(candidate.e < firefly::gbest_fit)
+						{
+							//std::cout << "current_T:" << candidate.e << "	quasi_e:"<<candidate.e<< "	the current best_T:" << firefly::gbest_fit<<"	Current number step"<<step <<'\n';
+							particle->updateGlobalBest(y);
+							
+							firefly::gbest_position = candidate.c.ligands[i].rigid.position;
+							firefly::gbest_orientation = candidate.c.ligands[i].rigid.orientation;
+							for(int z=0;z<candidate.c.ligands[i].torsions.size();z++)
+								fierfly::gbest_torsion[z] = candidate.c.ligands[i].torsions[z];
+						}
+					}
+
+		
+				//update each particle in every dimension
+				particle->updateVelocityT(generator,y,which);
+				//compute the new position;
+				particle->computeNewTorsion(y,generator,which);*/
+
+				if (candidate.e < firefly::gbest_fit)
+				{
+					//std::cout << "current_T:" << candidate.e << "	quasi_e:"<<candidate.e<< "	the current best_T:" << firefly::gbest_fit<<"	Current number step"<<step <<'\n';
+					fireflies->updateGlobalBest(y);
+
+					firefly::gbest_position = candidate.c.ligands[i].rigid.position;
+					firefly::gbest_orientation = candidate.c.ligands[i].rigid.orientation;
+					for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+						firefly::gbest_torsion[z] = candidate.c.ligands[i].torsions[z];
+				}
+			}
+
+			for (int k = 0; i < fireflies->number; i++)
+				for (int j = 0; j < fireflies->number; j++)
+					if (fireflies->getCurrentFit(i) < fireflies->getCurrentFit(j))
+					{
+						fireflies->moveFireflyTorsion(i, j, generator, which);
+						/*if (fireflies->getCurrentFit(i) < firefly::gbest_fit)
+						{
+							fireflies->updateGlobalBest(i);
+							firefly::gbest_position = candidate.c.ligands[i].rigid.position;
+							firefly::gbest_orientation = candidate.c.ligands[i].rigid.orientation;
+							for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+								firefly::gbest_torsion[z] = candidate.c.ligands[i].torsions[z];
+						}*/
+					}
+
+			for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+				candidate.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
+			candidate.c.ligands[i].rigid.orientation = firefly::gbest_orientation;
+			candidate.c.ligands[i].rigid.position = firefly::gbest_position;
+
+			return;
+		}
+		which -= candidate.c.ligands[i].torsions.size();
+	}
+
+	VINA_FOR_IN(i, candidate.c.flex)
+	{
+		if (which < candidate.c.flex[i].torsions.size())
+		{
+			candidate.c.flex[i].torsions[which] = random_fl(-pi, pi, generator);
+			return;
+		}
+		which -= candidate.c.flex[i].torsions.size();
+	}
+}
