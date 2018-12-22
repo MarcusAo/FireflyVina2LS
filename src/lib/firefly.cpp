@@ -8,13 +8,13 @@ vec firefly::gbest_position;
 
 double firefly::gbest_fit;
 
-firefly::firefly(int num_of_fireflies, double gamma, double beta, double alpha, const vec corner1, const vec corner2, rng &g, conf &c)
+firefly::firefly(int num_fireflies, double gamma, double beta, double alpha, const vec corner1, const vec corner2, rng &g, conf &c)
 {
     sz torsionSize = c.ligands[0].torsions.size();
     this->gamma = gamma,
     this->beta = beta,
     this->alpha = alpha;
-    this->number = num_of_fireflies;
+    this->number = num_fireflies;
     this->g = g;
     this->corner1[0] = corner1[0]; //minmum
     this->corner1[1] = corner1[1];
@@ -134,4 +134,9 @@ void firefly::updateCurrentOrientation(int i, qt orientation)
 void firefly::updateCurrentTorsion(int i, fl torsion, sz which)
 {
     fireflies[i].current_torsion[which] = torsion;
+}
+
+void firefly::updateGlobalBestFit(double e)
+{
+    firefly::gbest_fit = e;
 }

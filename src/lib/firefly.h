@@ -52,6 +52,7 @@ class firefly
     void moveFireflyTorsion(int, int, rng &, sz);
 
     void updateGlobalBest(int);
+    void updateGlobalBestFit(double);
 
     double getCurrentFit(int);
 
