@@ -1,5 +1,5 @@
 /*
-        PSOVina2LS-1.1                    Date: 23/03/2018
+        FireflyVina2LS-1.0                    Date: 23/03/2018
 
         This file is revised from main.cpp in AutoDock Vina.
 
@@ -45,7 +45,7 @@
 #include <boost/filesystem/convenience.hpp> // filesystem::basename
 #include <boost/thread/thread.hpp> // hardware_concurrency // FIXME rm ?
 #include "parse_pdbqt.h"
-#include "parallel_pso.h" //PSOVina
+#include "parallel_firefly.h" //FireflyVina
 #include "file.h"
 #include "cache.h"
 #include "non_cache.h"
@@ -167,8 +167,9 @@ output_container remove_redundant(const output_container& in, fl min_rmsd) {
 void do_search(model& m, const boost::optional<model>& ref, const scoring_function& sf, const precalculate& prec, const igrid& ig, const precalculate& prec_widened, const igrid& ig_widened, non_cache& nc, // nc.slope is changed
 			   const std::string& out_name,
 			   const vec& corner1, const vec& corner2,
-			   const parallel_pso& par/*PSOVina*/, fl energy_range, sz num_modes, 
-			   int seed, int verbosity, bool score_only, bool local_only, tee& log, const terms& t, const flv& weights,int num_birds, double w, double c1, double c2) {
+			   const parallel_firefly& par/*FireflyVina*/, fl energy_range, sz num_modes, 
+			   int seed, int verbosity, bool score_only, bool local_only, tee& log, const terms& t, const flv& weights,
+			   int num_fireflies, double gamma, double beta, double alpha) {
 	conf_size s = m.get_size();
 	conf c = m.get_initial_conf();
 	fl e = max_fl;
@@ -202,7 +203,7 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 	else if(local_only) {
 		output_type out(c, e);
 		doing(verbosity, "Performing local search", log);
-		refine_structure(m, prec, nc, out, authentic_v, par.pso.ssd_par.evals/*PSOVina*/);
+		refine_structure(m, prec, nc, out, authentic_v, par.firefly.ssd_par.evals/*FireflyVina*/);
 		done(verbosity, log);
 		fl intramolecular_energy = m.eval_intramolecular(prec, authentic_v, out.c);
 		e = m.eval_adjusted(sf, prec, nc, authentic_v, out.c, intramolecular_energy);
@@ -233,7 +234,7 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 		}
 
 		doing(verbosity, "Performing search", log);
-		par(m, out_cont, prec, ig, prec_widened, ig_widened, corner1, corner2, generator, num_birds, w, c1, c2);
+		par(m, out_cont, prec, ig, prec_widened, ig_widened, corner1, corner2, generator, num_fireflies, gamma, beta, alpha);
 		done(verbosity, log);
 
 if(!out_cont.empty()) {
@@ -245,7 +246,7 @@ if(!out_cont.empty()) {
 
 		doing(verbosity, "Refining results", log);
 		VINA_FOR_IN(i, out_cont)
-			refine_structure(m, prec, nc, out_cont[i], authentic_v, par.pso.ssd_par.evals/*PSOVina*/);
+			refine_structure(m, prec, nc, out_cont[i], authentic_v, par.firefly.ssd_par.evals/*FireflyVina*/);
 
 		if(!out_cont.empty()) {
 			out_cont.sort();
@@ -307,7 +308,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 				 bool score_only, bool local_only, bool randomize_only, bool no_cache,
 				 const grid_dims& gd, int exhaustiveness,
 				 const flv& weights,
-				 int cpu, int seed, int verbosity, sz num_modes, fl energy_range, tee& log, int num_birds,double w,double c1,double c2) {
+				 int cpu, int seed, int verbosity, sz num_modes, fl energy_range, tee& log, int num_fireflies,double gamma,double beta,double alpha) {
 
 	doing(verbosity, "Setting up the scoring function", log);
 
@@ -325,13 +326,13 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 	vec corner1(gd[0].begin, gd[1].begin, gd[2].begin);
 	vec corner2(gd[0].end,   gd[1].end,   gd[2].end);
 
-	parallel_pso par;/*PSOVina*/
+	parallel_firefly par;/*FireflyVina*/
 	sz heuristic = m.num_movable_atoms() + 10 * m.get_size().num_degrees_of_freedom();
-	par.pso.num_steps = unsigned(70 * 3 * (50 + heuristic) / 2); // 2 * 70 -> 8 * 20 // FIXME/*PSOVina*/
-	par.pso.ssd_par.evals = unsigned((25 + m.num_movable_atoms()) / 3);/*PSOVina*/
-	par.pso.min_rmsd = 1.0;/*PSOVina*/
-	par.pso.num_saved_mins = 20;/*PSOVina*/
-	par.pso.hunt_cap = vec(10, 10, 10);/*PSOVina*/
+	par.firefly.num_steps = unsigned(70 * 3 * (50 + heuristic) / 2); // 2 * 70 -> 8 * 20 // FIXME/*FireflyVina*/
+	par.firefly.ssd_par.evals = unsigned((25 + m.num_movable_atoms()) / 3);/*FireflyVina*/
+	par.firefly.min_rmsd = 1.0;/*FireflyVina*/
+	par.firefly.num_saved_mins = 20;/*FireflyVina*/
+	par.firefly.hunt_cap = vec(10, 10, 10);/*FireflyVina*/
 	par.num_tasks = exhaustiveness;
 	par.num_threads = cpu;
 	par.display_progress = (verbosity > 1);
@@ -349,7 +350,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 					  out_name,
 					  corner1, corner2,
 					  par, energy_range, num_modes,
-					  seed, verbosity, score_only, local_only, log, t, weights,num_birds,w,c1,c2);
+					  seed, verbosity, score_only, local_only, log, t, weights,num_fireflies,gamma,beta,alpha);
 		}
 		else {
 			bool cache_needed = !(score_only || randomize_only || local_only);
@@ -361,7 +362,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 					  out_name,
 					  corner1, corner2,
 					  par, energy_range, num_modes,
-					  seed, verbosity, score_only, local_only, log, t, weights,num_birds,w,c1,c2);
+					  seed, verbosity, score_only, local_only, log, t, weights,num_fireflies,gamma,beta,alpha);
 		}
 	}
 }
@@ -424,7 +425,7 @@ model parse_bundle(const boost::optional<std::string>& rigid_name_opt, const boo
 
 int main(int argc, char* argv[]) {
 	using namespace boost::program_options;
-	const std::string version_string = "PSOVina version 1.0";    //pso
+	const std::string version_string = "FireflyVina version 1.0";    //firefly
 	const std::string error_message = "\n\n\
 Please contact author, Marcus, C. K. Ng <marcus.ckng@gmail.com> or Dr. Shirley W. I. Siu <shirleysiu@umac.mo>, so\n\
 that this problem can be resolved. The reproducibility of the\n\
@@ -443,10 +444,10 @@ your problem report:\n\
 * random seed the program used (this is printed when the program starts).\n\
 \n\
 Thank you!\n";
-//pso
+//firefly
 	const std::string cite_message = "\
 =======================================================================\n\
-PSOVina2LS version 1.1                                                \n\
+FireflyVina2LS version 1.0                                                \n\
 Giotto Tai & Shirley W. I. Siu                                   \n\
                                                                        \n\
 Computational Biology and Bioinformatics Lab                           \n\
@@ -454,7 +455,7 @@ University of Macau                                                    \n\
                                                                        \n\
 Visit http://cbbio.cis.umac.mo for more information.                   \n\
                                                                        \n\
-PSOVina was developed based on the framework of AutoDock Vina.         \n\
+FireflyVina was developed based on the framework of AutoDock Vina.         \n\
                                                                        \n\
 For more information about Vina, please visit http://vina.scripps.edu. \n\
                                                                        \n\
@@ -463,8 +464,8 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 	try {
 		std::string rigid_name, ligand_name, flex_name, config_name, out_name, log_name;
 		fl center_x, center_y, center_z, size_x, size_y, size_z;
-		double w=2.2250738585072014e-308,c1=2.2250738585072014e-308,c2=2.2250738585072014e-308;
-		int cpu = 0, seed, exhaustiveness, verbosity = 2, num_modes = 9,num_birds = 0;
+		double gamma=2.2250738585072014e-308,beta=2.2250738585072014e-308,alpha=2.2250738585072014e-308;
+		int cpu = 0, seed, exhaustiveness, verbosity = 2, num_modes = 9,num_fireflies = 0;
 		fl energy_range = 2.0;
 
 		// -0.035579, -0.005156, 0.840245, -0.035069, -0.587439, 0.05846
@@ -494,12 +495,12 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 			("size_y", value<fl>(&size_y), "size in the Y dimension (Angstroms)")
 			("size_z", value<fl>(&size_z), "size in the Z dimension (Angstroms)")
 		;
-		options_description pso("PSO parameters (optional)");
-		pso.add_options()
-			("num_particles", value<int>(&num_birds)->default_value(8), "Number of particles per thread")
-			("w", value<double>(&w)->default_value(0.36,"0.36"), "Inertia weight")
-			("c1", value<double>(&c1)->default_value(0.99,"0.99"), "Cognitive weight")
-			("c2", value<double>(&c2)->default_value(0.99,"0.99"), "Social weight")
+		options_description firefly("Firefly parameters (optional)");
+		firefly.add_options()
+			("num_fireflies", value<int>(&num_fireflies)->default_value(8), "Number of fireflies per thread")
+			("gamma", value<double>(&gamma)->default_value(0.36,"0.36"), "Absorption coefficient")
+			("beta", value<double>(&beta)->default_value(0.99,"0.99"), "Attractiveness")
+			("alpha", value<double>(&alpha)->default_value(0.99,"0.99"), "Randomization parameter")
 		;
 		//options_description outputs("Output prefixes (optional - by default, input names are stripped of .pdbqt\nare used as prefixes. _001.pdbqt, _002.pdbqt, etc. are appended to the prefixes to produce the output names");
 		options_description outputs("Output (optional)");
@@ -538,9 +539,9 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 			("version",       bool_switch(&version), "display program version")
 		;
 		options_description desc, desc_config, desc_simple;
-		desc       .add(inputs).add(search_area).add(pso).add(outputs).add(advanced).add(misc).add(config).add(info);
-		desc_config.add(inputs).add(search_area).add(pso).add(outputs).add(advanced).add(misc);
-		desc_simple.add(inputs).add(search_area).add(pso).add(outputs).add(misc).add(config).add(info);
+		desc       .add(inputs).add(search_area).add(firefly).add(outputs).add(advanced).add(misc).add(config).add(info);
+		desc_config.add(inputs).add(search_area).add(firefly).add(outputs).add(advanced).add(misc);
+		desc_simple.add(inputs).add(search_area).add(firefly).add(outputs).add(misc).add(config).add(info);
 
 		variables_map vm;
 		try {
@@ -696,7 +697,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 					score_only, local_only, randomize_only, false, // no_cache == false
 					gd, exhaustiveness,
 					weights,
-					cpu, seed, verbosity, max_modes_sz, energy_range, log, num_birds,w,c1,c2);
+					cpu, seed, verbosity, max_modes_sz, energy_range, log, num_fireflies,gamma,beta,alpha);
 	}
 	catch(file_error& e) {
 		std::cerr << "\n\nError: could not open \"" << e.name.string() << "\" for " << (e.in ? "reading" : "writing") << ".\n";
