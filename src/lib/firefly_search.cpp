@@ -5,125 +5,125 @@
 #include "mutate.h"
 
 output_type firefly_search::operator()(model &m,
-									   const precalculate &p,
-									   const igrid &ig,
-									   const precalculate &p_widened,
-									   const igrid &ig_widened,
-									   const vec &corner1,
-									   const vec &corner2,
-									   incrementable *increment_me,
-									   rng &generator,
-									   int num_of_fireflies,
-									   double gamma,
-									   double beta,
-									   double alpha) const
+                                       const precalculate &p,
+                                       const igrid &ig,
+                                       const precalculate &p_widened,
+                                       const igrid &ig_widened,
+                                       const vec &corner1,
+                                       const vec &corner2,
+                                       incrementable *increment_me,
+                                       rng &generator,
+                                       int num_of_fireflies,
+                                       double gamma,
+                                       double beta,
+                                       double alpha) const
 {
-	output_container tmp;
-	this->operator()(m,
-					 tmp,
-					 p,
-					 ig,
-					 p_widened,
-					 ig_widened,
-					 corner1,
-					 corner2,
-					 increment_me,
-					 generator,
-					 num_of_fireflies,
-					 gamma,
-					 beta,
-					 alpha); // call the version that produces the whole container
-	VINA_CHECK(!tmp.empty());
-	return tmp.front();
+    output_container tmp;
+    this->operator()(m,
+                     tmp,
+                     p,
+                     ig,
+                     p_widened,
+                     ig_widened,
+                     corner1,
+                     corner2,
+                     increment_me,
+                     generator,
+                     num_of_fireflies,
+                     gamma,
+                     beta,
+                     alpha); // call the version that produces the whole container
+    VINA_CHECK(!tmp.empty());
+    return tmp.front();
 }
 
 bool metropolis_accept(fl old_f, fl new_f, fl temperature, rng &generator)
 {
-	if (new_f < old_f)
-		return true;
-	const fl acceptance_probability = std::exp((old_f - new_f) / temperature);
-	return random_fl(0, 1, generator) < acceptance_probability;
+    if (new_f < old_f)
+        return true;
+    const fl acceptance_probability = std::exp((old_f - new_f) / temperature);
+    return random_fl(0, 1, generator) < acceptance_probability;
 }
 
 // out is sorted
 void firefly_search::operator()(model &m,
-								output_container &out,
-								const precalculate &p,
-								const igrid &ig,
-								const precalculate &p_widened,
-								const igrid &ig_widened,
-								const vec &corner1,
-								const vec &corner2,
-								incrementable *increment_me,
-								rng &generator,
-								int num_of_fireflies,
-								double gamma,
-								double beta,
-								double alpha) const
+                                output_container &out,
+                                const precalculate &p,
+                                const igrid &ig,
+                                const precalculate &p_widened,
+                                const igrid &ig_widened,
+                                const vec &corner1,
+                                const vec &corner2,
+                                incrementable *increment_me,
+                                rng &generator,
+                                int num_of_fireflies,
+                                double gamma,
+                                double beta,
+                                double alpha) const
 {
-	vec authentic_v(1000, 1000, 1000); // FIXME? this is here to avoid max_fl/max_fl
-	conf_size s = m.get_size();
-	change g(s);
-	output_type tmp(s, 0);
-	tmp.c.randomize(corner1, corner2, generator); //first randomize
-	fl best_e = max_fl;
-	quasi_newton quasi_newton_par;
-	quasi_newton_par.max_steps = ssd_par.evals;
-	firefly particle(num_of_fireflies, gamma, beta, alpha, corner1, corner2, generator, tmp.c);
+    vec authentic_v(1000, 1000, 1000); // FIXME? this is here to avoid max_fl/max_fl
+    conf_size s = m.get_size();
+    change g(s);
+    output_type tmp(s, 0);
+    tmp.c.randomize(corner1, corner2, generator); //first randomize
+    fl best_e = max_fl;
+    quasi_newton quasi_newton_par;
+    quasi_newton_par.max_steps = ssd_par.evals;
+    firefly particle(num_of_fireflies, gamma, beta, alpha, corner1, corner2, generator, tmp.c);
 
-	double energy = 0;
-	int count = 0;
+    double energy = 0;
+    int count = 0;
 
-	printf("MAXSTEP %d\n", num_steps);
-	printf("TORSIZE %d\n", tmp.c.ligands[0].torsions.size());
-	printf("PARTICLE %d\n", particle.number);
+    printf("MAXSTEP %d\n", num_steps);
+    printf("TORSIZE %d\n", tmp.c.ligands[0].torsions.size());
+    printf("PARTICLE %d\n", particle.number);
 
-	VINA_U_FOR(step, num_steps)
-	{
+    VINA_U_FOR(step, num_steps)
+    {
 
-		if (increment_me)
-			++(*increment_me);
-		output_type candidate = tmp;
+        if (increment_me)
+            ++(*increment_me);
+        output_type candidate = tmp;
 
-		firefly_mutate_conf(candidate, m, mutation_amplitude, generator, &particle, p, ig, g, hunt_cap, quasi_newton_par, step); //for each particle loop
+        firefly_mutate_conf(candidate, m, mutation_amplitude, generator, &particle, p, ig, g, hunt_cap, quasi_newton_par, step); //for each particle loop
 
-		tmp = candidate;
-		m.set(tmp.c); // FIXME? useless?
+        tmp = candidate;
+        m.set(tmp.c); // FIXME? useless?
 
-		// FIXME only for very promising ones
-		if (tmp.e < best_e || out.size() < num_saved_mins)
-		{
-			quasi_newton_par(m, p, ig, tmp, g, authentic_v);
-			m.set(tmp.c); // FIXME? useless?
-			tmp.coords = m.get_heavy_atom_movable_coords();
-			add_to_output_container(out, tmp, min_rmsd, num_saved_mins); // 20 - max size
-			if (tmp.e < best_e)
-				best_e = tmp.e;
-		}
+        // FIXME only for very promising ones
+        if (tmp.e < best_e || out.size() < num_saved_mins)
+        {
+            quasi_newton_par(m, p, ig, tmp, g, authentic_v);
+            m.set(tmp.c); // FIXME? useless?
+            tmp.coords = m.get_heavy_atom_movable_coords();
+            add_to_output_container(out, tmp, min_rmsd, num_saved_mins); // 20 - max size
+            if (tmp.e < best_e)
+                best_e = tmp.e;
+        }
 
-		/***Criteria defined by PSOVina***/
+        /***Criteria defined by PSOVina***/
 
-		if (std::abs(firefly::gbest_fit - energy) < 0.0001)
-		{
+        if (std::abs(firefly::gbest_fit - energy) < 0.0001)
+        {
 
-			count += 1;
-			if (count > 350)
-			{
-				//printf("Terminated: %d \n",step);
-				printf("CONVERGEAT %d\n", step);
-				step = num_steps; //break the loop
-				count = 0;
-			}
-		}
-		else
-		{
-			energy = firefly::gbest_fit;
-			count = 0;
-		}
-	}
+            count += 1;
+            if (count > 350)
+            {
+                //printf("Terminated: %d \n",step);
+                printf("CONVERGEAT %d\n", step);
+                step = num_steps; //break the loop
+                count = 0;
+            }
+        }
+        else
+        {
+            energy = firefly::gbest_fit;
+            count = 0;
+        }
+    }
 
-	printf("GBEST %lf\n", firefly::gbest_fit);
+    printf("GBEST %lf\n", firefly::gbest_fit);
 
-	VINA_CHECK(!out.empty());
-	VINA_CHECK(out.front().e <= out.back().e); // make sure the sorting worked in the correct order
+    VINA_CHECK(!out.empty());
+    VINA_CHECK(out.front().e <= out.back().e); // make sure the sorting worked in the correct order
 }
