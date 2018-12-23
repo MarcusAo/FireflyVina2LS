@@ -1,4 +1,4 @@
-LIBOBJ = cache.o coords.o current_weights.o everything.o grid.o szv_grid.o manifold.o model.o pso_search.o mutate.o pso_mutate.o my_pid.o naive_non_cache.o non_cache.o parallel_pso.o parse_pdbqt.o pdb.o quasi_newton.o quaternion.o random.o ssd.o terms.o weighted_terms.o pso.o
+LIBOBJ = cache.o coords.o current_weights.o everything.o grid.o szv_grid.o manifold.o model.o firefly_search.o mutate.o firefly_mutate.o my_pid.o naive_non_cache.o non_cache.o parallel_firefly.o parse_pdbqt.o pdb.o quasi_newton.o quaternion.o random.o ssd.o terms.o weighted_terms.o firefly.o
 MAINOBJ = main.o
 SPLITOBJ = split.o
 
@@ -26,14 +26,14 @@ LIBS = -l boost_system${BOOST_LIB_VERSION} -l boost_thread${BOOST_LIB_VERSION} -
 %.o : ../../../src/split/%.cpp 
 	$(CC) $(CFLAGS) -I ../../../src/lib -o $@ -c $< 
 
-all: psovina2ls psovina_split
+all: fireflyvina2ls fireflyvina_split
 
 include dependencies
 
-psovina2ls: $(MAINOBJ) $(LIBOBJ)
+fireflyvina2ls: $(MAINOBJ) $(LIBOBJ)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
-psovina_split: $(SPLITOBJ)
+fireflyvina_split: $(SPLITOBJ)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:
