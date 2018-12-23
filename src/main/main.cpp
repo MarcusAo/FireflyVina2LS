@@ -308,7 +308,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 				 bool score_only, bool local_only, bool randomize_only, bool no_cache,
 				 const grid_dims& gd, int exhaustiveness,
 				 const flv& weights,
-				 int cpu, int seed, int verbosity, sz num_modes, fl energy_range, tee& log, int num_fireflies,double gamma,double beta,double alpha) {
+				 int cpu, int seed, int verbosity, sz num_modes, fl energy_range, tee& log, int num_fireflies, double gamma, double beta, double alpha) {
 
 	doing(verbosity, "Setting up the scoring function", log);
 
@@ -350,7 +350,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 					  out_name,
 					  corner1, corner2,
 					  par, energy_range, num_modes,
-					  seed, verbosity, score_only, local_only, log, t, weights,num_fireflies,gamma,beta,alpha);
+					  seed, verbosity, score_only, local_only, log, t, weights, num_fireflies, gamma, beta, alpha);
 		}
 		else {
 			bool cache_needed = !(score_only || randomize_only || local_only);
@@ -362,7 +362,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 					  out_name,
 					  corner1, corner2,
 					  par, energy_range, num_modes,
-					  seed, verbosity, score_only, local_only, log, t, weights,num_fireflies,gamma,beta,alpha);
+					  seed, verbosity, score_only, local_only, log, t, weights, num_fireflies, gamma, beta, alpha);
 		}
 	}
 }
@@ -464,7 +464,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 	try {
 		std::string rigid_name, ligand_name, flex_name, config_name, out_name, log_name;
 		fl center_x, center_y, center_z, size_x, size_y, size_z;
-		double gamma=2.2250738585072014e-308,beta=2.2250738585072014e-308,alpha=2.2250738585072014e-308;
+		double gamma=2.2250738585072014e-308, beta=2.2250738585072014e-308, alpha=2.2250738585072014e-308;
 		int cpu = 0, seed, exhaustiveness, verbosity = 2, num_modes = 9,num_fireflies = 0;
 		fl energy_range = 2.0;
 
@@ -497,7 +497,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 		;
 		options_description firefly("Firefly parameters (optional)");
 		firefly.add_options()
-			("num_fireflies", value<int>(&num_fireflies)->default_value(8), "Number of fireflies per thread")
+			("num_fireflies", value<int>(&num_fireflies)->default_value(20), "Number of fireflies per thread")
 			("gamma", value<double>(&gamma)->default_value(0.36,"0.36"), "Absorption coefficient")
 			("beta", value<double>(&beta)->default_value(0.99,"0.99"), "Attractiveness")
 			("alpha", value<double>(&alpha)->default_value(0.99,"0.99"), "Randomization parameter")
@@ -697,7 +697,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 					score_only, local_only, randomize_only, false, // no_cache == false
 					gd, exhaustiveness,
 					weights,
-					cpu, seed, verbosity, max_modes_sz, energy_range, log, num_fireflies,gamma,beta,alpha);
+					cpu, seed, verbosity, max_modes_sz, energy_range, log, num_fireflies, gamma, beta, alpha);
 	}
 	catch(file_error& e) {
 		std::cerr << "\n\nError: could not open \"" << e.name.string() << "\" for " << (e.in ? "reading" : "writing") << ".\n";
