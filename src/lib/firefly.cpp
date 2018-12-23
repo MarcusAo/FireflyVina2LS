@@ -39,7 +39,7 @@ void firefly::init(rng &g, conf &c)
         lampyridae single_lampyridae;
 
         single_lampyridae.current_fit = 1.7976931348623158e+308;
-        single_lampyridae.tmp_fit = 1.7976931348623158e+308;
+        single_lampyridae.pbest_fit = 1.7976931348623158e+308;
 
         //set position part
         single_lampyridae.current_position = random_in_box(this->corner1, this->corner2, g);
@@ -72,14 +72,18 @@ void firefly::moveFireflyPosition(int master, int slave, rng &generator)
     fl distance_sqr = sqr(master_pos[0] - slave_pos[0]) + sqr(master_pos[1] - slave_pos[1]) + sqr(master_pos[2] - slave_pos[2]);
     fireflies[slave].current_position[0] += beta * (master_pos[0] - slave_pos[0]) * std::exp(gamma * distance_sqr * (-1)) + alpha * random_normal(0, 1, generator);
     fireflies[slave].current_position[1] += beta * (master_pos[1] - slave_pos[1]) * std::exp(gamma * distance_sqr * (-1)) + alpha * random_normal(0, 1, generator);
+    fireflies[slave].current_position[2] += beta * (master_pos[2] - slave_pos[2]) * std::exp(gamma * distance_sqr * (-1)) + alpha * random_normal(0, 1, generator);
 }
 
 void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
 {
     qt master_ori = fireflies[master].current_orientation;
     qt slave_ori = fireflies[slave].current_orientation;
+
     fl distance_sqr = sqr(master_ori.R_component_1() - slave_ori.R_component_1()) + sqr(master_ori.R_component_2() - slave_ori.R_component_2()) + sqr(master_ori.R_component_3() - slave_ori.R_component_3()) + sqr(master_ori.R_component_4() - slave_ori.R_component_4());
+
     quaternion_increment(fireflies[slave].current_orientation, beta * quaternion_to_angle(master_ori - slave_ori) * std::exp(gamma * distance_sqr * (-1)));
+
     quaternion_increment(fireflies[slave].current_orientation, vec(alpha * random_normal(0, 1, generator), alpha * random_normal(0, 1, generator), alpha * random_normal(0, 1, generator)));
 }
 
@@ -123,7 +127,7 @@ double firefly::getCurrentFit(int i)
 
 void firefly::updateCurrentPosition(int i, vec pos)
 {
-    fireflies[i].current_position = pos
+    fireflies[i].current_position = pos;
 }
 
 void firefly::updateCurrentOrientation(int i, qt orientation)
@@ -139,4 +143,14 @@ void firefly::updateCurrentTorsion(int i, fl torsion, sz which)
 void firefly::updateGlobalBestFit(double e)
 {
     firefly::gbest_fit = e;
+}
+
+void firefly::updatePersonalBest(int i, double e)
+{
+    fireflies[i].pbest_fit = e;
+}
+
+double firefly::getPersonalBest(int i)
+{
+    return fireflies[i].pbest_fit;
 }

@@ -21,7 +21,7 @@ class firefly
         //fl* pbest_torsion;
         fl *current_torsion;
 
-        double tmp_fit;
+        double pbest_fit;
     };
 
     int torsionSize;
@@ -60,12 +60,15 @@ class firefly
 
     void updateCurrentPosition(int, vec);
     void updateCurrentOrientation(int, qt);
-    void updateCurrentOrientation(int, sz, fl *);
+    void updateCurrentTorsion(int, fl, sz);
 
     /*Get current vector*/
     vec getCurrentPosition(int);
     qt getCurrentOrientation(int);
     fl getCurrentTorsion(int, sz);
+
+    double getPersonalBest(int);
+    void updatePersonalBest(int, double);
 };
 
 #endif /*FIREFLY_H_*/
