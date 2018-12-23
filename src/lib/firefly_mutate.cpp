@@ -51,8 +51,8 @@ sz firefly_count_mutable_entities(const conf &c)
 
 void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const model &m, fl amplitude, rng &generator, firefly *fireflies, double *PersonalBest, const precalculate &p, const igrid &ig, change &g, const vec &v, quasi_newton &quasi_newton_par, int step)
 {
-    int shrink = 1; //roughing factor R = shrink / 10
-    int cr = 18;    //roughing condition
+    int shrink = 5; //roughing factor R = shrink / 10
+    int cr = 20;    //roughing condition
     output_type tmp_2 = candidate;
 
     sz mutable_entities_num = firefly_count_mutable_entities(candidate.c);
@@ -66,7 +66,6 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
     int y;
     VINA_FOR_IN(i, candidate.c.ligands)
     {
-
         model tmp_m = m;
         const vec authentic_v(1000, 1000, 1000);
 
@@ -87,7 +86,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                 quasi_newton_par(tmp_m, p, ig, candidate, g, v, shrink);
 
                 //set the personal best(energy value and position);
-                if (candidate.e < fireflies->getPersonalBest(y))
+                if (candidate.e < fireflies->getPersonalBest(y) || step <= cr)
                 {
                     if (candidate.e < fireflies->getPersonalBest(y))
                         fireflies->updatePersonalBest(y, candidate.e);
@@ -122,8 +121,8 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
             }
 
             int order[fireflies->number];
-            for (int i = 0; i < fireflies->number; i++)
-                order[i] = i;
+            for (int x = 0; x < fireflies->number; x++)
+                order[x] = x;
 
             for (int t = 0; t < fireflies->number - 1; t++)
                 for (int u = t + 1; u < fireflies->number; u++)
@@ -134,7 +133,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                         order[u] = temp;
                     }
 
-            for (int k = 0; i < fireflies->number; i++)
+            for (int k = 0; k < fireflies->number; k++)
                 for (int j = 0; j < fireflies->number; j++)
                     if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(order[j]))
                     {
@@ -168,7 +167,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                     quasi_newton_par(tmp_m, p, ig, candidate, g, v, shrink);
 
                     //set the personal best(energy value and position);
-                    if (candidate.e < fireflies->getPersonalBest(y) || step <= 18)
+                    if (candidate.e < fireflies->getPersonalBest(y) || step <= cr)
                     {
 
                         if (candidate.e < fireflies->getPersonalBest(y))
@@ -191,8 +190,6 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                             if (tmp_2.e < firefly::gbest_fit)
                             {
 
-                                //std::cout << "current_O:" << candidate.e << "	quasi_e:"<<candidate.e <<"	the current best_O:" << firefly::gbest_fit<<"	Current number steps"<<step<<'\n';
-
                                 fireflies->updateGlobalBestFit(tmp_2.e);
 
                                 firefly::gbest_position = tmp_2.c.ligands[i].rigid.position;
@@ -205,8 +202,8 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                 }
 
                 int order[fireflies->number];
-                for (int i = 0; i < fireflies->number; i++)
-                    order[i] = i;
+                for (int x = 0; x < fireflies->number; x++)
+                    order[x] = x;
 
                 for (int t = 0; t < fireflies->number - 1; t++)
                     for (int u = t + 1; u < fireflies->number; u++)
@@ -217,17 +214,17 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                             order[u] = temp;
                         }
 
-                for (int k = 0; i < fireflies->number; k++)
+                for (int k = 0; k < fireflies->number; k++)
                     for (int j = 0; j < fireflies->number; j++)
-                        if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(j))
+                        if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(order[j]))
                         {
                             fireflies->moveFireflyOrientation(k, j, generator);
                         }
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
-                    candidate.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
-                candidate.c.ligands[i].rigid.orientation = firefly::gbest_orientation;
-                candidate.c.ligands[i].rigid.position = firefly::gbest_position;
+                    candidate_1.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
+                candidate_1.c.ligands[i].rigid.orientation = firefly::gbest_orientation;
+                candidate_1.c.ligands[i].rigid.position = firefly::gbest_position;
                 candidate_1.e = firefly::gbest_fit;
                 return;
             }
@@ -248,7 +245,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                     quasi_newton_par(tmp_m, p, ig, candidate, g, v, shrink);
 
                     //set the personal best(energy value and position);
-                    if (candidate.e < fireflies->getPersonalBest(y) || step <= 18)
+                    if (candidate.e < fireflies->getPersonalBest(y) || step <= cr)
                     {
                         if (candidate.e < fireflies->getPersonalBest(y))
                             fireflies->updatePersonalBest(y, candidate.e);
@@ -272,15 +269,15 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                                 firefly::gbest_position = tmp_2.c.ligands[i].rigid.position;
                                 firefly::gbest_orientation = tmp_2.c.ligands[i].rigid.orientation;
                                 for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
-                                    fierfly::gbest_torsion[z] = tmp_2.c.ligands[i].torsions[z];
+                                    firefly::gbest_torsion[z] = tmp_2.c.ligands[i].torsions[z];
                             }
                         }
                     }
                 }
 
                 int order[fireflies->number];
-                for (int i = 0; i < fireflies->number; i++)
-                    order[i] = i;
+                for (int x = 0; x < fireflies->number; x++)
+                    order[x] = x;
 
                 for (int t = 0; t < fireflies->number - 1; t++)
                     for (int u = t + 1; u < fireflies->number; u++)
@@ -291,9 +288,9 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                             order[u] = temp;
                         }
 
-                for (int k = 0; i < fireflies->number; i++)
+                for (int k = 0; k < fireflies->number; k++)
                     for (int j = 0; j < fireflies->number; j++)
-                        if (fireflies->getCurrentFit(i) < fireflies->getCurrentFit(j))
+                        if (fireflies->getCurrentFit(i) < fireflies->getCurrentFit(order[j]))
                         {
                             fireflies->moveFireflyTorsion(j, k, generator, which);
                         }
@@ -318,3 +315,4 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
             which -= candidate.c.flex[i].torsions.size();
         }
     }
+}

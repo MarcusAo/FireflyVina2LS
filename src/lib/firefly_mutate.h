@@ -7,6 +7,20 @@
 
 // does not set model
 void firefly_mutate_conf(output_type &c,
+                         output_type &c_1,
+                         const model &m,
+                         fl amplitude,
+                         rng &generator,
+                         firefly *,
+                         double *,
+                         const precalculate &,
+                         const igrid &,
+                         change &,
+                         const vec &,
+                         quasi_newton &,
+                         int);
+
+void firefly_mutate_conf(output_type &c,
                          const model &m,
                          fl amplitude,
                          rng &generator,
