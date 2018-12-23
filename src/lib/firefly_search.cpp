@@ -56,7 +56,7 @@ void firefly_search::operator()(model &m,
                                 const vec &corner2,
                                 incrementable *increment_me,
                                 rng &generator,
-                                int num_of_fireflies,
+                                int num_fireflies,
                                 double gamma,
                                 double beta,
                                 double alpha) const
@@ -69,36 +69,44 @@ void firefly_search::operator()(model &m,
     fl best_e = max_fl;
     quasi_newton quasi_newton_par;
     quasi_newton_par.max_steps = ssd_par.evals;
-    firefly particle(num_of_fireflies, gamma, beta, alpha, corner1, corner2, generator, tmp.c);
-
+    output_type tmp_rough = tmp;
+    firefly fireflies(num_fireflies, gamma, beta, alpha, corner1, corner2, generator, tmp.c);
+    double* PersonalBest = new double[1000];
+    for(int cou = 0; cou < 100; cou++)
+		PersonalBest[cou] = 0;
     double energy = 0;
     int count = 0;
 
-    printf("MAXSTEP %d\n", num_steps);
-    printf("TORSIZE %d\n", tmp.c.ligands[0].torsions.size());
-    printf("PARTICLE %d\n", particle.number);
+    //printf("MAXSTEP %d\n", num_steps);
+    //printf("TORSIZE %d\n", tmp.c.ligands[0].torsions.size());
+    //printf("PARTICLE %d\n", particle.number);
 
     VINA_U_FOR(step, num_steps)
     {
 
         if (increment_me)
             ++(*increment_me);
-        output_type candidate = tmp;
+        output_type candidate = tmp_rough;
+        output_type candidate_1 = tmp;
 
-        firefly_mutate_conf(candidate, m, mutation_amplitude, generator, &particle, p, ig, g, hunt_cap, quasi_newton_par, step); //for each particle loop
+        firefly_mutate_conf(candidate, candidate_1, m, mutation_amplitude, generator, &fireflies, PersonalBest, p, ig, g, hunt_cap, quasi_newton_par, step); //for each particle loop
 
-        tmp = candidate;
-        m.set(tmp.c); // FIXME? useless?
-
-        // FIXME only for very promising ones
-        if (tmp.e < best_e || out.size() < num_saved_mins)
+        tmp_rough = candidate;
+        if (step == 0 || metropolis_accept(tmp.e, candidate_1.e, temperature, generator))
         {
-            quasi_newton_par(m, p, ig, tmp, g, authentic_v);
+            tmp = candidate_1;
             m.set(tmp.c); // FIXME? useless?
-            tmp.coords = m.get_heavy_atom_movable_coords();
-            add_to_output_container(out, tmp, min_rmsd, num_saved_mins); // 20 - max size
-            if (tmp.e < best_e)
-                best_e = tmp.e;
+
+            // FIXME only for very promising ones
+            if (tmp.e < best_e || out.size() < num_saved_mins)
+            {
+                quasi_newton_par(m, p, ig, tmp, g, authentic_v);
+                m.set(tmp.c); // FIXME? useless?
+                tmp.coords = m.get_heavy_atom_movable_coords();
+                add_to_output_container(out, tmp, min_rmsd, num_saved_mins); // 20 - max size
+                if (tmp.e < best_e)
+                    best_e = tmp.e;
+            }
         }
 
         /***Criteria defined by PSOVina***/
@@ -122,7 +130,7 @@ void firefly_search::operator()(model &m,
         }
     }
 
-    printf("GBEST %lf\n", firefly::gbest_fit);
+    //printf("GBEST %lf\n", firefly::gbest_fit);
 
     VINA_CHECK(!out.empty());
     VINA_CHECK(out.front().e <= out.back().e); // make sure the sorting worked in the correct order
