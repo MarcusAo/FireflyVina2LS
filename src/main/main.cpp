@@ -427,7 +427,7 @@ int main(int argc, char* argv[]) {
 	using namespace boost::program_options;
 	const std::string version_string = "FireflyVina version 1.0";    //firefly
 	const std::string error_message = "\n\n\
-Please contact author, Marcus, C. K. Ng <marcus.ckng@gmail.com> or Dr. Shirley W. I. Siu <shirleysiu@umac.mo>, so\n\
+Please contact author, Marcus, M. C. Ao <mingchi_@hotmail.com> or Dr. Shirley W. I. Siu <shirleysiu@umac.mo>, so\n\
 that this problem can be resolved. The reproducibility of the\n\
 error may be vital, so please remember to include the following in\n\
 your problem report:\n\
@@ -497,10 +497,10 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 		;
 		options_description firefly("Firefly parameters (optional)");
 		firefly.add_options()
-			("num_fireflies", value<int>(&num_fireflies)->default_value(20), "Number of fireflies per thread")
-			("gamma", value<double>(&gamma)->default_value(0.36,"0.36"), "Absorption coefficient")
-			("beta", value<double>(&beta)->default_value(0.99,"0.99"), "Attractiveness")
-			("alpha", value<double>(&alpha)->default_value(0.99,"0.99"), "Randomization parameter")
+			("num_fireflies", value<int>(&num_fireflies)->default_value(16), "Number of fireflies per thread")
+			("gamma", value<double>(&gamma)->default_value(1,"1"), "Absorption coefficient")
+			("beta", value<double>(&beta)->default_value(1,"1"), "Attractiveness")
+			("alpha", value<double>(&alpha)->default_value(0.25,"0.25"), "Randomization parameter")
 		;
 		//options_description outputs("Output prefixes (optional - by default, input names are stripped of .pdbqt\nare used as prefixes. _001.pdbqt, _002.pdbqt, etc. are appended to the prefixes to produce the output names");
 		options_description outputs("Output (optional)");
