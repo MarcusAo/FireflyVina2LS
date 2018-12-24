@@ -1,9 +1,9 @@
 /*
-        PSOVina version 1.0                     Date: 26/11/2014
+        FireflyVina version 1.0                     
 
         This file is revised from mutate.cpp in AutoDock Vina.
 
-        Authors: Marcus C. K. Ng  <marcus.ckng@gmail.com>
+        Authors: Marcus M. C. Ao  <mingchi_@hotmail.com>
 
                  Shirley W. I. Siu <shirleysiu@umac.mo>
 
