@@ -1,6 +1,6 @@
 =======================================================================
-PSOVina2LS version 1.1                                                    
-Allan H. Lin & Giotto H. K. Tai & Shirley W. I. Siu                                   
+FireflyVina2LS version 1.0                                                    
+Marcus M. C. Ao & Shirley W. I. Siu                                   
 
 Computational Biology and Bioinformatics Lab (CBBio)                        
 Department of Computer and Information Science (CIS)
@@ -11,14 +11,7 @@ http://cbbio.cis.umac.mo
 
 RELEASE NOTES: 
 
-- PSOVina2LS-1.1 is a bug fixed version of PSOVina2LS-1.0 removing the 
-  segmentation fault problem that occurs about 1 in 10 docking runs.
-
-- PSOVina2LS-1.0 includes the efficient two-stage local search method 
-  which signficantly reduces the time in optimizing bad solutions, 
-  resulting in a speed up of 2-6 fold versus AutoDock Vina.
-
-- PSOVina2LS was developed based on the framework of AutoDock Vina. 
+- FireflyVina2LS was developed based on the framework of PSOVina2LS. 
   For more information about Vina, please visit http://vina.scripps.edu. 
 
 =======================================================================
