@@ -448,7 +448,7 @@ Thank you!\n";
 	const std::string cite_message = "\
 =======================================================================\n\
 FireflyVina2LS version 1.0                                                \n\
-Giotto Tai & Shirley W. I. Siu                                   \n\
+Marcus M. C. Ao & Shirley W. I. Siu                                   \n\
                                                                        \n\
 Computational Biology and Bioinformatics Lab                           \n\
 University of Macau                                                    \n\
