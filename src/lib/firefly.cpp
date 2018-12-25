@@ -73,6 +73,20 @@ void firefly::moveFireflyPosition(int master, int slave, rng &generator)
     fireflies[slave].current_position[0] += beta * (master_pos[0] - slave_pos[0]) * std::exp(gamma * distance_sqr * (-1)) + alpha * random_fl(0, 1, generator);
     fireflies[slave].current_position[1] += beta * (master_pos[1] - slave_pos[1]) * std::exp(gamma * distance_sqr * (-1)) + alpha * random_fl(0, 1, generator);
     fireflies[slave].current_position[2] += beta * (master_pos[2] - slave_pos[2]) * std::exp(gamma * distance_sqr * (-1)) + alpha * random_fl(0, 1, generator);
+
+    if (fireflies[slave].current_position[0] < corner1[0])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+    if (fireflies[slave].current_position[1] < corner1[1])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+    if (fireflies[slave].current_position[2] < corner1[2])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+
+    if (fireflies[slave].current_position[0] > corner2[0])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+    if (fireflies[slave].current_position[1] > corner2[1])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+    if (fireflies[slave].current_position[2] > corner2[2])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
 }
 
 void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
