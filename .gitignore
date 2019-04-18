@@ -1,1 +1,4 @@
-build/linux/release/*
+build/linux/release/*.o
+build/linux/release/fireflyvina2ls
+build/linux/release/fireflyvina_split
+
