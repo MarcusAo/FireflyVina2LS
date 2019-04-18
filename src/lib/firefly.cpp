@@ -94,8 +94,10 @@ void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
     qt master_ori = fireflies[master].current_orientation;
     qt slave_ori = fireflies[slave].current_orientation;
 
-    fl distance_sqr = sqr(master_ori.R_component_1() - slave_ori.R_component_1()) + sqr(master_ori.R_component_2() - slave_ori.R_component_2()) + sqr(master_ori.R_component_3() - slave_ori.R_component_3()) + sqr(master_ori.R_component_4() - slave_ori.R_component_4());
+    //fl distance_sqr = sqr(master_ori.R_component_1() - slave_ori.R_component_1()) + sqr(master_ori.R_component_2() - slave_ori.R_component_2()) + sqr(master_ori.R_component_3() - slave_ori.R_component_3()) + sqr(master_ori.R_component_4() - slave_ori.R_component_4());
 
+    fl distance_sqr = quaternion_difference(master_ori, slave_ori).norm();
+    
     quaternion_increment(fireflies[slave].current_orientation, beta * quaternion_to_angle(master_ori - slave_ori) * std::exp(gamma * distance_sqr * (-1)));
 
     quaternion_increment(fireflies[slave].current_orientation, vec(alpha * random_fl(0, 1, generator), alpha * random_fl(0, 1, generator), alpha * random_fl(0, 1, generator)));

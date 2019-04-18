@@ -54,7 +54,12 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
     int shrink = 5; //roughing factor R = shrink / 10
     int cr = 20;    //roughing condition
     output_type tmp_2 = candidate;
-
+    //if (step == 0)
+        //std::cout << "current_alpha:" << fireflies->alpha << '\n';
+    fireflies->alpha = fireflies->alpha * 0.97;
+    //std::cout << "current_beta:" << fireflies->beta << '\n';
+    //std::cout << "current_alpha:" << fireflies->alpha << '\n';
+    //std::cout << "current_number:" << fireflies->number << '\n';
     sz mutable_entities_num = firefly_count_mutable_entities(candidate.c);
     if (mutable_entities_num == 0)
         return;
@@ -137,7 +142,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                 for (int j = 0; j < fireflies->number; j++)
                     if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(order[j]))
                     {
-                        fireflies->moveFireflyPosition(j, k, generator);
+                        fireflies->moveFireflyPosition(k, order[j], generator);
                     }
 
             for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
@@ -218,7 +223,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                     for (int j = 0; j < fireflies->number; j++)
                         if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(order[j]))
                         {
-                            fireflies->moveFireflyOrientation(k, j, generator);
+                            fireflies->moveFireflyOrientation(k, order[j], generator);
                         }
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
@@ -292,7 +297,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                     for (int j = 0; j < fireflies->number; j++)
                         if (fireflies->getCurrentFit(i) < fireflies->getCurrentFit(order[j]))
                         {
-                            fireflies->moveFireflyTorsion(j, k, generator, which);
+                            fireflies->moveFireflyTorsion(k, order[j], generator, which);
                         }
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)

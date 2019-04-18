@@ -118,7 +118,7 @@ void firefly_search::operator()(model &m,
             if (count > 350)
             {
                 //printf("Terminated: %d \n",step);
-                printf("CONVERGEAT %d\n", step);
+                //printf("CONVERGEAT %d\n", step);
                 step = num_steps; //break the loop
                 count = 0;
             }

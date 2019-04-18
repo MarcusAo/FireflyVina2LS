@@ -1,4 +1,4 @@
-BASE=/your-boost-full-path/boost-1.59.0
+BASE=/usr/local/include/boost
 BOOST_VERSION=1_59
 BOOST_INCLUDE = $(BASE)/include
 C_PLATFORM= -pthread

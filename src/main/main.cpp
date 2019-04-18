@@ -500,7 +500,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 			("num_fireflies", value<int>(&num_fireflies)->default_value(16), "Number of fireflies per thread")
 			("gamma", value<double>(&gamma)->default_value(1,"1"), "Absorption coefficient")
 			("beta", value<double>(&beta)->default_value(1,"1"), "Attractiveness")
-			("alpha", value<double>(&alpha)->default_value(0.25,"0.25"), "Randomization parameter")
+			("alpha", value<double>(&alpha)->default_value(0.25,"0.02"), "Randomization parameter")
 		;
 		//options_description outputs("Output prefixes (optional - by default, input names are stripped of .pdbqt\nare used as prefixes. _001.pdbqt, _002.pdbqt, etc. are appended to the prefixes to produce the output names");
 		options_description outputs("Output (optional)");
