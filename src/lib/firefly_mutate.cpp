@@ -117,10 +117,10 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                         //std::cout << "current_P:" << candidate.e << "	quasi_e:"<<candidate.e << "	the current best_P:" << firefly::gbest_fit<<"	Current number steps" <<step <<'\n';
                         fireflies->updateGlobalBestFit(tmp_2.e);
 
-                        firefly::gbest_position = candidate.c.ligands[i].rigid.position;
-                        firefly::gbest_orientation = candidate.c.ligands[i].rigid.orientation;
-                        for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
-                            firefly::gbest_torsion[z] = candidate.c.ligands[i].torsions[z];
+                        firefly::gbest_position = tmp_2.c.ligands[i].rigid.position;
+                        firefly::gbest_orientation = tmp_2.c.ligands[i].rigid.orientation;
+                        for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
+                            firefly::gbest_torsion[z] = tmp_2.c.ligands[i].torsions[z];
                     }
                 }
             }
@@ -140,9 +140,9 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
 
             for (int k = 0; k < fireflies->number; k++)
                 for (int j = 0; j < fireflies->number; j++)
-                    if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(order[j]))
+                    if (fireflies->getCurrentFit(k) > fireflies->getCurrentFit(order[j]))
                     {
-                        fireflies->moveFireflyPosition(k, order[j], generator);
+                        fireflies->moveFireflyPosition(order[j], k, generator);
                     }
 
             for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
@@ -221,9 +221,9 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
 
                 for (int k = 0; k < fireflies->number; k++)
                     for (int j = 0; j < fireflies->number; j++)
-                        if (fireflies->getCurrentFit(k) < fireflies->getCurrentFit(order[j]))
+                        if (fireflies->getCurrentFit(k) > fireflies->getCurrentFit(order[j]))
                         {
-                            fireflies->moveFireflyOrientation(k, order[j], generator);
+                            fireflies->moveFireflyOrientation(order[j], k, generator);
                         }
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
@@ -295,9 +295,9 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
 
                 for (int k = 0; k < fireflies->number; k++)
                     for (int j = 0; j < fireflies->number; j++)
-                        if (fireflies->getCurrentFit(i) < fireflies->getCurrentFit(order[j]))
+                        if (fireflies->getCurrentFit(k) > fireflies->getCurrentFit(order[j]))
                         {
-                            fireflies->moveFireflyTorsion(k, order[j], generator, which);
+                            fireflies->moveFireflyTorsion(order[j], k, generator, which);
                         }
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
