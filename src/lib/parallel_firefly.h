@@ -22,7 +22,9 @@ struct parallel_firefly
                         int num_of_fireflies,
                         double gamma,
                         double beta,
-                        double alpha) const;
+                        double alpha,
+                        double mu1, 
+                        double mu2) const;
 };
 
 #endif

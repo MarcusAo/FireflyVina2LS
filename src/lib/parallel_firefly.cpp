@@ -23,7 +23,7 @@ struct parallel_firefly_aux
     const vec *corner1;
     const vec *corner2;
     const int num_of_fireflies;
-    const double gamma, beta, alpha;
+    const double gamma, beta, alpha, mu1, mu2;
     parallel_progress *pg;
     parallel_firefly_aux(const firefly_search *firefly_,
                          const precalculate *p_,
@@ -36,7 +36,22 @@ struct parallel_firefly_aux
                          int num_of_fireflies_,
                          double gamma_,
                          double beta_,
-                         double alpha_) : firefly(firefly_), p(p_), ig(ig_), p_widened(p_widened_), ig_widened(ig_widened_), corner1(corner1_), corner2(corner2_), pg(pg_), num_of_fireflies(num_of_fireflies_), gamma(gamma_), beta(beta_), alpha(alpha_) {}
+                         double alpha_,
+                         double mu1_,
+                         double mu2_) : 
+                         firefly(firefly_), 
+                         p(p_), 
+                         ig(ig_), 
+                         p_widened(p_widened_), 
+                         ig_widened(ig_widened_), 
+                         corner1(corner1_), 
+                         corner2(corner2_), pg(pg_), 
+                         num_of_fireflies(num_of_fireflies_), 
+                         gamma(gamma_), 
+                         beta(beta_), 
+                         alpha(alpha_), 
+                         mu1(mu1_), 
+                         mu2(mu2_) {}
 
     void operator()(parallel_firefly_task &t) const
     {
@@ -53,7 +68,9 @@ struct parallel_firefly_aux
                    num_of_fireflies,
                    gamma,
                    beta,
-                   alpha);
+                   alpha,
+                   mu1,
+                   mu2);
     }
 };
 
@@ -83,7 +100,9 @@ void parallel_firefly::operator()(const model &m,
                                   int num_of_fireflies,
                                   double gamma,
                                   double beta,
-                                  double alpha) const
+                                  double alpha,
+                                  double mu1,
+                                  double mu2) const
 {
     parallel_progress pp;
     parallel_firefly_aux parallel_firefly_aux_instance(&firefly,
@@ -97,7 +116,9 @@ void parallel_firefly::operator()(const model &m,
                                                        num_of_fireflies,
                                                        gamma,
                                                        beta,
-                                                       alpha);
+                                                       alpha,
+                                                       mu1,
+                                                       mu2);
     parallel_firefly_task_container task_container;
     VINA_FOR(i, num_tasks)
     task_container.push_back(new parallel_firefly_task(m, random_int(0, 1000000, generator)));

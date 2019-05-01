@@ -26,6 +26,7 @@ class firefly
 
     int torsionSize;
     double beta, gamma, alpha; // weight, learning coefficient(1&2)
+    double mu1, mu2; //chaotic
     rng g;
 
     int number;           //number of firefly
@@ -35,7 +36,7 @@ class firefly
     static qt gbest_orientation; //global best of degree of freedom vector
     static fl *gbest_torsion;    //global best of degree of freedom vector
 
-    static double gbest_fit; //global best value
+    static double gbest_fit; //global best values
 
     std::vector<lampyridae> fireflies;
 
@@ -44,7 +45,7 @@ class firefly
     double R2Max_;
     double R2Min_;
 
-    firefly(int, double, double, double, const vec, const vec, rng &, conf &);
+    firefly(int, double, double, double, double, double, const vec, const vec, rng &, conf &);
     void init(rng &, conf &);
 
     void moveFireflyPosition(int, int, rng &);

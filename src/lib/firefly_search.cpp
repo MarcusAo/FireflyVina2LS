@@ -16,7 +16,9 @@ output_type firefly_search::operator()(model &m,
                                        int num_of_fireflies,
                                        double gamma,
                                        double beta,
-                                       double alpha) const
+                                       double alpha,
+                                       double mu1,
+                                       double mu2) const
 {
     output_container tmp;
     this->operator()(m,
@@ -32,7 +34,9 @@ output_type firefly_search::operator()(model &m,
                      num_of_fireflies,
                      gamma,
                      beta,
-                     alpha); // call the version that produces the whole container
+                     alpha,
+                     mu1,
+                     mu2); // call the version that produces the whole container
     VINA_CHECK(!tmp.empty());
     return tmp.front();
 }
@@ -59,7 +63,9 @@ void firefly_search::operator()(model &m,
                                 int num_fireflies,
                                 double gamma,
                                 double beta,
-                                double alpha) const
+                                double alpha,
+                                double mu1,
+                                double mu2) const
 {
     vec authentic_v(1000, 1000, 1000); // FIXME? this is here to avoid max_fl/max_fl
     conf_size s = m.get_size();
@@ -70,7 +76,7 @@ void firefly_search::operator()(model &m,
     quasi_newton quasi_newton_par;
     quasi_newton_par.max_steps = ssd_par.evals;
     output_type tmp_rough = tmp;
-    firefly fireflies(num_fireflies, gamma, beta, alpha, corner1, corner2, generator, tmp.c);
+    firefly fireflies(num_fireflies, gamma, beta, alpha, mu1, mu2, corner1, corner2, generator, tmp.c);
     double* PersonalBest = new double[1000];
     for(int cou = 0; cou < 100; cou++)
 		PersonalBest[cou] = 0;
