@@ -56,7 +56,14 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
     output_type tmp_2 = candidate;
     //if (step == 0)
         //std::cout << "current_alpha:" << fireflies->alpha << '\n';
-    fireflies->alpha = fireflies->alpha * 0.97;
+    
+    //chaotic 
+    double temp = fireflies->gamma;   
+    fireflies->gamma = fireflies->mu1 * fireflies->gamma * (1-fireflies->gamma);
+    
+    fireflies->alpha = fireflies->mu2 * temp * (1-fireflies->alpha);
+    
+    //fireflies->alpha = fireflies->alpha * 0.97;
     //std::cout << "current_beta:" << fireflies->beta << '\n';
     //std::cout << "current_alpha:" << fireflies->alpha << '\n';
     //std::cout << "current_number:" << fireflies->number << '\n';
@@ -131,7 +138,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
 
             for (int t = 0; t < fireflies->number - 1; t++)
                 for (int u = t + 1; u < fireflies->number; u++)
-                    if (fireflies->getCurrentFit(t) > fireflies->getCurrentFit(u))
+                    if (fireflies->getCurrentFit(order[t]) > fireflies->getCurrentFit(order[u]))
                     {
                         int temp = order[t];
                         order[t] = order[u];
@@ -144,6 +151,8 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                     {
                         fireflies->moveFireflyPosition(order[j], k, generator);
                     }
+
+            fireflies->moveFireflyPositionRandomly(order[0], generator);
 
             for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
                 candidate_1.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
@@ -212,7 +221,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
 
                 for (int t = 0; t < fireflies->number - 1; t++)
                     for (int u = t + 1; u < fireflies->number; u++)
-                        if (fireflies->getCurrentFit(t) > fireflies->getCurrentFit(u))
+                        if (fireflies->getCurrentFit(order[t]) > fireflies->getCurrentFit(order[u]))
                         {
                             int temp = order[t];
                             order[t] = order[u];
@@ -225,6 +234,8 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                         {
                             fireflies->moveFireflyOrientation(order[j], k, generator);
                         }
+                
+                fireflies->moveFireflyOrientationRandomly(order[0], generator);
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
                     candidate_1.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
@@ -286,7 +297,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
 
                 for (int t = 0; t < fireflies->number - 1; t++)
                     for (int u = t + 1; u < fireflies->number; u++)
-                        if (fireflies->getCurrentFit(t) > fireflies->getCurrentFit(u))
+                        if (fireflies->getCurrentFit(order[t]) > fireflies->getCurrentFit(order[u]))
                         {
                             int temp = order[t];
                             order[t] = order[u];
@@ -299,6 +310,8 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                         {
                             fireflies->moveFireflyTorsion(order[j], k, generator, which);
                         }
+
+                fireflies->moveFireflyTorsionRandomly(order[0], generator, which);
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
                     candidate_1.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];

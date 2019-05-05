@@ -169,7 +169,7 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 			   const vec& corner1, const vec& corner2,
 			   const parallel_firefly& par/*FireflyVina*/, fl energy_range, sz num_modes, 
 			   int seed, int verbosity, bool score_only, bool local_only, tee& log, const terms& t, const flv& weights,
-			   int num_fireflies, double gamma, double beta, double alpha) {
+			   int num_fireflies, double gamma, double beta, double alpha, double mu1, double mu2) {
 	conf_size s = m.get_size();
 	conf c = m.get_initial_conf();
 	fl e = max_fl;
@@ -234,7 +234,7 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 		}
 
 		doing(verbosity, "Performing search", log);
-		par(m, out_cont, prec, ig, prec_widened, ig_widened, corner1, corner2, generator, num_fireflies, gamma, beta, alpha);
+		par(m, out_cont, prec, ig, prec_widened, ig_widened, corner1, corner2, generator, num_fireflies, gamma, beta, alpha, mu1, mu2);
 		done(verbosity, log);
 
 if(!out_cont.empty()) {
@@ -308,7 +308,8 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 				 bool score_only, bool local_only, bool randomize_only, bool no_cache,
 				 const grid_dims& gd, int exhaustiveness,
 				 const flv& weights,
-				 int cpu, int seed, int verbosity, sz num_modes, fl energy_range, tee& log, int num_fireflies, double gamma, double beta, double alpha) {
+				 int cpu, int seed, int verbosity, sz num_modes, fl energy_range, tee& log, int num_fireflies, double gamma, double beta, double alpha,
+				 double mu1, double mu2) {
 
 	doing(verbosity, "Setting up the scoring function", log);
 
@@ -350,7 +351,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 					  out_name,
 					  corner1, corner2,
 					  par, energy_range, num_modes,
-					  seed, verbosity, score_only, local_only, log, t, weights, num_fireflies, gamma, beta, alpha);
+					  seed, verbosity, score_only, local_only, log, t, weights, num_fireflies, gamma, beta, alpha, mu1, mu2);
 		}
 		else {
 			bool cache_needed = !(score_only || randomize_only || local_only);
@@ -362,7 +363,7 @@ void main_procedure(model& m, const boost::optional<model>& ref, // m is non-con
 					  out_name,
 					  corner1, corner2,
 					  par, energy_range, num_modes,
-					  seed, verbosity, score_only, local_only, log, t, weights, num_fireflies, gamma, beta, alpha);
+					  seed, verbosity, score_only, local_only, log, t, weights, num_fireflies, gamma, beta, alpha, mu1, mu2);
 		}
 	}
 }
@@ -465,6 +466,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 		std::string rigid_name, ligand_name, flex_name, config_name, out_name, log_name;
 		fl center_x, center_y, center_z, size_x, size_y, size_z;
 		double gamma=2.2250738585072014e-308, beta=2.2250738585072014e-308, alpha=2.2250738585072014e-308;
+		double mu1 = 2.2250738585072014e-308, mu2 = 2.2250738585072014e-308;
 		int cpu = 0, seed, exhaustiveness, verbosity = 2, num_modes = 9,num_fireflies = 0;
 		fl energy_range = 2.0;
 
@@ -501,6 +503,8 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 			("gamma", value<double>(&gamma)->default_value(1,"1"), "Absorption coefficient")
 			("beta", value<double>(&beta)->default_value(1,"1"), "Attractiveness")
 			("alpha", value<double>(&alpha)->default_value(0.25,"0.02"), "Randomization parameter")
+			("mu1", value<double>(&mu1)->default_value(4,"4"), "Chaotic parameter")
+			("mu2", value<double>(&mu2)->default_value(4,"4"), "Chaotic parameter")
 		;
 		//options_description outputs("Output prefixes (optional - by default, input names are stripped of .pdbqt\nare used as prefixes. _001.pdbqt, _002.pdbqt, etc. are appended to the prefixes to produce the output names");
 		options_description outputs("Output (optional)");
@@ -697,7 +701,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 					score_only, local_only, randomize_only, false, // no_cache == false
 					gd, exhaustiveness,
 					weights,
-					cpu, seed, verbosity, max_modes_sz, energy_range, log, num_fireflies, gamma, beta, alpha);
+					cpu, seed, verbosity, max_modes_sz, energy_range, log, num_fireflies, gamma, beta, alpha, mu1, mu2);
 	}
 	catch(file_error& e) {
 		std::cerr << "\n\nError: could not open \"" << e.name.string() << "\" for " << (e.in ? "reading" : "writing") << ".\n";
