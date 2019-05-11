@@ -1,6 +1,5 @@
 #include "firefly.h"
 #include "random.h"
-#include "Gamma.h"
 
 // the vector of degree of freedom
 qt firefly::gbest_orientation;
@@ -71,7 +70,7 @@ void firefly::init(rng &g, conf &c)
     firefly::gbest_fit = 1.7976931348623158e+308;
 }
 
-int sign(double x)
+int firefly::sign(double x)
 {
     if (x > 0) return 1;
     if (x < 0) return -1;
@@ -146,12 +145,12 @@ void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
     
     quaternion_increment(fireflies[slave].current_orientation, beta * quaternion_to_angle(master_ori - slave_ori) * std::exp(gamma * distance_sqr * (-1)));
 
-    quaternion_increment(fireflies[slave].current_orientation, vec(alpha * (random_fl(0, 1, generator)-0.5), alpha * (random_fl(0, 1, generator)-0.5), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator)));
+    quaternion_increment(fireflies[slave].current_orientation, vec(alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator)));
 }
 
 void firefly::moveFireflyOrientationRandomly(int index, rng &generator)
 {
-    quaternion_increment(fireflies[index].current_orientation, vec(alpha * (random_fl(0, 1, generator)-0.5), alpha * (random_fl(0, 1, generator)-0.5), alpha *(random_fl(0, 1, generator)-0.5)));
+    quaternion_increment(fireflies[index].current_orientation, vec(alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator)));
 }
 
 void firefly::moveFireflyTorsionRandomly(int index, rng &generator, sz which)

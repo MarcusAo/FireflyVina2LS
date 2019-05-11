@@ -82,6 +82,7 @@ class firefly
     void updatePersonalBest(int, double);
 
     double levy(rng &);
+    int sign(double);
 };
 
 #endif /*FIREFLY_H_*/
