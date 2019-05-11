@@ -27,6 +27,12 @@ class firefly
     int torsionSize;
     double beta, gamma, alpha; // weight, learning coefficient(1&2)
     double mu1, mu2; //chaotic
+
+    //Levy flight
+    double lbeta;
+    double sigma_v;
+    double sigma_u;
+
     rng g;
 
     int number;           //number of firefly
@@ -74,6 +80,8 @@ class firefly
 
     double getPersonalBest(int);
     void updatePersonalBest(int, double);
+
+    double levy(rng &);
 };
 
 #endif /*FIREFLY_H_*/

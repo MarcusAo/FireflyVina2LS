@@ -1,5 +1,6 @@
 #include "firefly.h"
 #include "random.h"
+#include "Gamma.h"
 
 // the vector of degree of freedom
 qt firefly::gbest_orientation;
@@ -29,6 +30,9 @@ firefly::firefly(int num_fireflies, double gamma, double beta, double alpha, dou
     this->R1Min_ = 0;
     this->R2Max_ = 1;
     this->R2Min_ = 0;
+    this->lbeta = 1.5;
+    this->sigma_u = pow(tgamma(1+this->lbeta)*sin(pi*this->lbeta/2)/(tgamma((1+this->lbeta)/2)*this->lbeta*pow(2,((this->lbeta-1)/2))),1/this->lbeta);
+    this->sigma_v = 1;
     firefly::gbest_torsion = new fl[torsionSize];
     init(g, c);
 }
@@ -67,11 +71,20 @@ void firefly::init(rng &g, conf &c)
     firefly::gbest_fit = 1.7976931348623158e+308;
 }
 
+int sign(double x)
+{
+    if (x > 0) return 1;
+    if (x < 0) return -1;
+    return 0;
+}
+
 void firefly::moveFireflyPositionRandomly(int index, rng &generator)
 {
-    fireflies[index].current_position[0] +=  alpha * (random_fl(0, 1, generator)-0.5);
-    fireflies[index].current_position[1] +=  alpha * (random_fl(0, 1, generator)-0.5);
-    fireflies[index].current_position[2] +=  alpha * (random_fl(0, 1, generator)-0.5);
+    fireflies[index].current_position[0] +=  alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
+
+    fireflies[index].current_position[1] +=  alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
+
+    fireflies[index].current_position[2] +=  alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
 
     if (fireflies[index].current_position[0] < corner1[0])
         fireflies[index].current_position = random_in_box(this->corner1, this->corner2, this->g);
@@ -93,9 +106,12 @@ void firefly::moveFireflyPosition(int master, int slave, rng &generator)
     vec master_pos = fireflies[master].current_position;
     vec slave_pos = fireflies[slave].current_position;
     fl distance_sqr = sqr(master_pos[0] - slave_pos[0]) + sqr(master_pos[1] - slave_pos[1]) + sqr(master_pos[2] - slave_pos[2]);
-    fireflies[slave].current_position[0] += beta * (master_pos[0] - slave_pos[0]) * std::exp(gamma * distance_sqr * (-1)) + alpha * (random_fl(0, 1, generator)-0.5);
-    fireflies[slave].current_position[1] += beta * (master_pos[1] - slave_pos[1]) * std::exp(gamma * distance_sqr * (-1)) + alpha * (random_fl(0, 1, generator)-0.5);
-    fireflies[slave].current_position[2] += beta * (master_pos[2] - slave_pos[2]) * std::exp(gamma * distance_sqr * (-1)) + alpha * (random_fl(0, 1, generator)-0.5);
+    
+    fireflies[slave].current_position[0] += beta * (master_pos[0] - slave_pos[0]) * std::exp(gamma * distance_sqr * (-1)) + alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
+    
+    fireflies[slave].current_position[1] += beta * (master_pos[1] - slave_pos[1]) * std::exp(gamma * distance_sqr * (-1)) + alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
+    
+    fireflies[slave].current_position[2] += beta * (master_pos[2] - slave_pos[2]) * std::exp(gamma * distance_sqr * (-1)) + alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
 
     if (fireflies[slave].current_position[0] < corner1[0])
         fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
@@ -112,6 +128,13 @@ void firefly::moveFireflyPosition(int master, int slave, rng &generator)
         fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
 }
 
+double firefly::levy(rng &generator)
+{
+    double u = random_normal(0,pow(sigma_u,2), generator);
+    double v = random_normal(0,sigma_v, generator);
+    return pow(u/(abs(v)),1/lbeta); 
+}
+
 void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
 {
     qt master_ori = fireflies[master].current_orientation;
@@ -123,7 +146,7 @@ void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
     
     quaternion_increment(fireflies[slave].current_orientation, beta * quaternion_to_angle(master_ori - slave_ori) * std::exp(gamma * distance_sqr * (-1)));
 
-    quaternion_increment(fireflies[slave].current_orientation, vec(alpha * (random_fl(0, 1, generator)-0.5), alpha * (random_fl(0, 1, generator)-0.5), alpha * (random_fl(0, 1, generator)-0.5)));
+    quaternion_increment(fireflies[slave].current_orientation, vec(alpha * (random_fl(0, 1, generator)-0.5), alpha * (random_fl(0, 1, generator)-0.5), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator)));
 }
 
 void firefly::moveFireflyOrientationRandomly(int index, rng &generator)
@@ -133,7 +156,7 @@ void firefly::moveFireflyOrientationRandomly(int index, rng &generator)
 
 void firefly::moveFireflyTorsionRandomly(int index, rng &generator, sz which)
 {
-    fireflies[index].current_torsion[which] += alpha * (random_fl(0, 1, generator)-0.5);
+    fireflies[index].current_torsion[which] += alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
 }
 
 void firefly::moveFireflyTorsion(int master, int slave, rng &generator, sz which)
@@ -141,7 +164,7 @@ void firefly::moveFireflyTorsion(int master, int slave, rng &generator, sz which
     fl master_tor = fireflies[master].current_torsion[which];
     fl slave_tor = fireflies[slave].current_torsion[which];
     fl distance_sqr = sqr(master_tor - slave_tor);
-    fireflies[slave].current_torsion[which] += beta * (master_tor - slave_tor) * std::exp(gamma * distance_sqr * (-1)) + alpha * (random_fl(0, 1, generator)-0.5);
+    fireflies[slave].current_torsion[which] += beta * (master_tor - slave_tor) * std::exp(gamma * distance_sqr * (-1)) + alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
 }
 
 vec firefly::getCurrentPosition(int i)
