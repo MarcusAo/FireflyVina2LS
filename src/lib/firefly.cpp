@@ -129,9 +129,10 @@ void firefly::moveFireflyPosition(int master, int slave, rng &generator)
 
 double firefly::levy(rng &generator)
 {
-    double u = random_normal(0,pow(sigma_u,2), generator);
+    //double u = random_normal(0,pow(sigma_u,2), generator);
+    double u = random_normal(0,sigma_u, generator);
     double v = random_normal(0,sigma_v, generator);
-    return pow(u/(abs(v)),1/lbeta); 
+    return u/pow(abs(v),1/lbeta); 
 }
 
 void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
