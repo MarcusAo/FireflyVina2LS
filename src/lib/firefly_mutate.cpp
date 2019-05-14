@@ -61,9 +61,9 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
     double temp = fireflies->gamma;   
     fireflies->gamma = fireflies->mu1 * fireflies->gamma * (1-fireflies->gamma);
     
-    fireflies->alpha = fireflies->mu2 * temp * (1-fireflies->alpha);
+    //fireflies->alpha = fireflies->mu2 * temp * (1-fireflies->alpha);
     
-    //fireflies->alpha = fireflies->alpha * 0.97;
+    fireflies->alpha = fireflies->alpha * 0.97;
     //std::cout << "current_beta:" << fireflies->beta << '\n';
     //std::cout << "current_alpha:" << fireflies->alpha << '\n';
     //std::cout << "current_number:" << fireflies->number << '\n';
