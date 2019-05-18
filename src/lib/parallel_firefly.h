@@ -24,7 +24,8 @@ struct parallel_firefly
                         double beta,
                         double alpha,
                         double mu1, 
-                        double mu2) const;
+                        double mu2,
+                        double lambda) const;
 };
 
 #endif

@@ -8,7 +8,7 @@ vec firefly::gbest_position;
 
 double firefly::gbest_fit;
 
-firefly::firefly(int num_fireflies, double gamma, double beta, double alpha, double mu1, double mu2, const vec corner1, const vec corner2, rng &g, conf &c)
+firefly::firefly(int num_fireflies, double gamma, double beta, double alpha, double mu1, double mu2, double lambda, const vec corner1, const vec corner2, rng &g, conf &c)
 {
     sz torsionSize = c.ligands[0].torsions.size();
     this->gamma = gamma,
@@ -29,7 +29,7 @@ firefly::firefly(int num_fireflies, double gamma, double beta, double alpha, dou
     this->R1Min_ = 0;
     this->R2Max_ = 1;
     this->R2Min_ = 0;
-    this->lbeta = 1.5;
+    this->lbeta = lambda;
     this->sigma_u = pow(tgamma(1+this->lbeta)*sin(pi*this->lbeta/2)/(tgamma((1+this->lbeta)/2)*this->lbeta*pow(2,((this->lbeta-1)/2))),1/this->lbeta);
     this->sigma_v = 1;
     firefly::gbest_torsion = new fl[torsionSize];
