@@ -8,6 +8,8 @@
 // does not set model
 void firefly_mutate_conf(output_type &c,
                          output_type &c_1,
+                         output_type &c_2,
+                         output_type &c_3,
                          const model &m,
                          fl amplitude,
                          rng &generator,

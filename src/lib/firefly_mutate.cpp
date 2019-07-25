@@ -38,6 +38,7 @@
 */
 
 #include "firefly_mutate.h"
+#include "kmeans.h"
 
 sz firefly_count_mutable_entities(const conf &c)
 {
@@ -49,7 +50,75 @@ sz firefly_count_mutable_entities(const conf &c)
     return counter;
 }
 
-void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const model &m, fl amplitude, rng &generator, firefly *fireflies, double *PersonalBest, const precalculate &p, const igrid &ig, change &g, const vec &v, quasi_newton &quasi_newton_par, int step)
+void update_2_and_3(int i, int order0, firefly *fireflies, output_type &candidate_2, output_type &candidate_3, output_type &candidate) 
+{
+    KMeans kmeans(3, 100);
+    double  all_points[fireflies->number];
+    int * cluster_best = new int[3];
+    for (int k = 0; k < fireflies->number; k++)
+    {
+        all_points[k] = fireflies->getCurrentFit(k);
+    }
+        
+    kmeans.run(all_points, fireflies->number);
+    cluster_best[0] = kmeans.a;
+    cluster_best[1] = kmeans.b;
+    cluster_best[2] = kmeans.c;
+    
+    int count = 0;
+    int other_cluster[2];
+    for (int k = 0; k < 3; k++ )
+    {
+        if (cluster_best[k]  != order0)
+        {
+            
+            other_cluster[count] = cluster_best[k];
+            count++;
+        } 
+    }
+    int second, third;
+
+    if (fireflies->getCurrentFit(other_cluster[0]) < fireflies->getCurrentFit(other_cluster[1]))
+    {
+        second = other_cluster[0];
+        third = other_cluster[1];
+    }
+    else
+    {
+        second = other_cluster[1];
+        third = other_cluster[0];
+    }
+
+    for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+        candidate_2.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(second, z);
+    candidate_2.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(second);
+    candidate_2.c.ligands[i].rigid.position = fireflies->getCurrentPosition(second);
+    candidate_2.e = fireflies->getCurrentFit(second);
+
+    for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+        candidate_3.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(third, z);
+    candidate_3.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(third);
+    candidate_3.c.ligands[i].rigid.position = fireflies->getCurrentPosition(third);
+    candidate_3.e = fireflies->getCurrentFit(third);
+}
+
+void firefly_mutate_conf(
+    output_type &candidate, 
+    output_type &candidate_1, 
+    output_type &candidate_2, 
+    output_type &candidate_3, 
+    const model &m, 
+    fl amplitude, 
+    rng &generator, 
+    firefly *fireflies, 
+    double *PersonalBest, 
+    const precalculate &p, 
+    const igrid &ig, 
+    change &g, 
+    const vec &v, 
+    quasi_newton &quasi_newton_par, 
+    int step
+    )
 {
     int shrink = 5; //roughing factor R = shrink / 10
     int cr = 20;    //roughing condition
@@ -58,12 +127,15 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
         //std::cout << "current_alpha:" << fireflies->alpha << '\n';
     
     //chaotic 
-    double temp = fireflies->gamma;   
+    //double temp = fireflies->gamma;   
     fireflies->gamma = fireflies->mu1 * fireflies->gamma * (1-fireflies->gamma);
-    
-    fireflies->alpha = fireflies->mu2 * temp * (1-fireflies->alpha);
-    
-    //fireflies->alpha = fireflies->alpha * 0.97;
+    //fireflies->beta = fireflies->mu1 * fireflies->beta * (1-fireflies->beta);
+    //fireflies->beta = std::exp(1) - 4.9 * fireflies->beta * fireflies->beta - 0.58;
+    //fireflies->gamma = std::exp(1) - 4.9 * fireflies->gamma * fireflies->gamma - 0.58;
+    //fireflies->alpha = fireflies->mu2 * temp * (1-fireflies->alpha);
+    //std::cout << "current_step:" << step << '\n';
+    fireflies->alpha = fireflies->alpha * 0.99;
+    //fireflies->alpha = 0.9 - 0.9 * pow((step-1)/1999, 2.1);
     //std::cout << "current_beta:" << fireflies->beta << '\n';
     //std::cout << "current_alpha:" << fireflies->alpha << '\n';
     //std::cout << "current_number:" << fireflies->number << '\n';
@@ -92,7 +164,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                 candidate.c.ligands[i].rigid.position = fireflies->getCurrentPosition(y);
                 candidate.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(y);
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
-                    candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(i, z);
+                    candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(y, z);
 
                 //local search
                 quasi_newton_par(tmp_m, p, ig, candidate, g, v, shrink);
@@ -105,11 +177,11 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                     tmp_2 = candidate;
 
                     quasi_newton_par(tmp_m, p, ig, tmp_2, g, v);
-
+                    
                     if (tmp_2.e < PersonalBest[y])
                     {
                         PersonalBest[y] = tmp_2.e;
-
+                        
                         fireflies->updateCurrentFit(y, tmp_2.e);
 
                         fireflies->updateCurrentPosition(y, tmp_2.c.ligands[i].rigid.position);
@@ -117,13 +189,12 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                         for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
                             fireflies->updateCurrentTorsion(y, tmp_2.c.ligands[i].torsions[z], z);
                     }
-
+                 
                     //set the global best(energy value and position);
                     if (tmp_2.e < firefly::gbest_fit)
                     {
-                        //std::cout << "current_P:" << candidate.e << "	quasi_e:"<<candidate.e << "	the current best_P:" << firefly::gbest_fit<<"	Current number steps" <<step <<'\n';
                         fireflies->updateGlobalBestFit(tmp_2.e);
-
+                        fireflies->updateGlobalBestFirefly(y);
                         firefly::gbest_position = tmp_2.c.ligands[i].rigid.position;
                         firefly::gbest_orientation = tmp_2.c.ligands[i].rigid.orientation;
                         for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
@@ -145,20 +216,70 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                         order[u] = temp;
                     }
 
+            update_2_and_3(i, order[0], fireflies, candidate_2, candidate_3, candidate);
+
             for (int k = 0; k < fireflies->number; k++)
                 for (int j = 0; j < fireflies->number; j++)
                     if (fireflies->getCurrentFit(k) > fireflies->getCurrentFit(order[j]))
                     {
                         fireflies->moveFireflyPosition(order[j], k, generator);
+                        //fireflies->moveFireflyPosition(order[0], k, generator);
+                        //fireflies->moveFireflyPosition1(order[j], k);
                     }
 
-            fireflies->moveFireflyPositionRandomly(order[0], generator);
+            //fireflies->moveFireflyPositionRandomly(order[0], generator);
+
+
+            vec original_position = fireflies->getCurrentPosition(order[0]);
+            bool success_pos = false;
+
+            for (int x = 0; x < 20; x++)
+            {
+                fireflies->updateCurrentPosition(order[0], original_position);
+                fireflies->moveFireflyPositionRandomly(order[0], generator);
+
+                output_type tmp_3 = candidate;
+
+                tmp_3.c.ligands[i].rigid.position = fireflies->getCurrentPosition(order[0]);
+                tmp_3.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(order[0]);
+                for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+                    tmp_3.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(order[0], z);
+
+                quasi_newton_par(tmp_m, p, ig, tmp_3, g, v, true);
+
+                if (tmp_3.e < firefly::gbest_fit)
+                {
+                    PersonalBest[order[0]] = tmp_3.e;
+                    fireflies->updateCurrentFit(order[0], tmp_3.e);
+                    fireflies->updateCurrentPosition(order[0], tmp_3.c.ligands[i].rigid.position);
+                    fireflies->updateCurrentOrientation(order[0], tmp_3.c.ligands[i].rigid.orientation);
+                    for (int z = 0; z < tmp_3.c.ligands[i].torsions.size(); z++)
+                        fireflies->updateCurrentTorsion(order[0], tmp_3.c.ligands[i].torsions[z], z);
+
+                    fireflies->updateGlobalBestFit(tmp_3.e);
+
+                    firefly::gbest_position = tmp_3.c.ligands[i].rigid.position;
+                    firefly::gbest_orientation = tmp_3.c.ligands[i].rigid.orientation;
+                    for (int z = 0; z < tmp_3.c.ligands[i].torsions.size(); z++)
+                        firefly::gbest_torsion[z] = tmp_3.c.ligands[i].torsions[z];
+                    
+                    success_pos = true;
+                    break;
+                }
+            }
+
+            if (success_pos == false)
+            {
+                fireflies->updateCurrentPosition(order[0], original_position);
+            }
 
             for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
                 candidate_1.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
             candidate_1.c.ligands[i].rigid.orientation = firefly::gbest_orientation;
             candidate_1.c.ligands[i].rigid.position = firefly::gbest_position;
             candidate_1.e = firefly::gbest_fit;
+
+            
             return;
         }
 
@@ -176,7 +297,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                     candidate.c.ligands[i].rigid.position = fireflies->getCurrentPosition(y);
                     candidate.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(y);
                     for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
-                        candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(i, z);
+                        candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(y, z);
 
                     quasi_newton_par(tmp_m, p, ig, candidate, g, v, shrink);
 
@@ -195,22 +316,25 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                         if (tmp_2.e < PersonalBest[y])
                         {
                             PersonalBest[y] = tmp_2.e;
+                            fireflies->updateCurrentFit(y, tmp_2.e);
                             fireflies->updateCurrentPosition(y, tmp_2.c.ligands[i].rigid.position);
                             fireflies->updateCurrentOrientation(y, tmp_2.c.ligands[i].rigid.orientation);
                             for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
                                 fireflies->updateCurrentTorsion(y, tmp_2.c.ligands[i].torsions[z], z);
 
                             //set the global best(energy value and position);
-                            if (tmp_2.e < firefly::gbest_fit)
-                            {
+                           
+                        }
 
-                                fireflies->updateGlobalBestFit(tmp_2.e);
+                        if (tmp_2.e < firefly::gbest_fit)
+                        {
 
-                                firefly::gbest_position = tmp_2.c.ligands[i].rigid.position;
-                                firefly::gbest_orientation = tmp_2.c.ligands[i].rigid.orientation;
-                                for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
-                                    firefly::gbest_torsion[z] = tmp_2.c.ligands[i].torsions[z];
-                            }
+                            fireflies->updateGlobalBestFit(tmp_2.e);
+                            fireflies->updateGlobalBestFirefly(y);
+                            firefly::gbest_position = tmp_2.c.ligands[i].rigid.position;
+                            firefly::gbest_orientation = tmp_2.c.ligands[i].rigid.orientation;
+                            for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
+                                firefly::gbest_torsion[z] = tmp_2.c.ligands[i].torsions[z];
                         }
                     }
                 }
@@ -228,14 +352,60 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                             order[u] = temp;
                         }
 
+                update_2_and_3(i, order[0], fireflies, candidate_2, candidate_3, candidate);
                 for (int k = 0; k < fireflies->number; k++)
                     for (int j = 0; j < fireflies->number; j++)
                         if (fireflies->getCurrentFit(k) > fireflies->getCurrentFit(order[j]))
                         {
                             fireflies->moveFireflyOrientation(order[j], k, generator);
+                            //fireflies->moveFireflyOrientation(order[0], k, generator);
+                            //fireflies->moveFireflyOrientation1(order[j], k);
                         }
                 
-                fireflies->moveFireflyOrientationRandomly(order[0], generator);
+                qt original_orientation = fireflies->getCurrentOrientation(order[0]);
+                bool success_ori = false;
+
+                for (int x = 0; x < 20; x++)
+                {
+                    fireflies->updateCurrentOrientation(order[0], original_orientation);
+                    fireflies->moveFireflyOrientationRandomly(order[0], generator);
+
+                    output_type tmp_3 = candidate;
+
+                    tmp_3.c.ligands[i].rigid.position = fireflies->getCurrentPosition(order[0]);
+                    tmp_3.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(order[0]);
+                    for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+                        tmp_3.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(order[0], z);
+
+                    quasi_newton_par(tmp_m, p, ig, tmp_3, g, v, true);
+
+                    if (tmp_3.e < firefly::gbest_fit)
+                    {
+                        PersonalBest[order[0]] = tmp_3.e;
+                        fireflies->updateCurrentFit(order[0], tmp_3.e);
+                        fireflies->updateCurrentPosition(order[0], tmp_3.c.ligands[i].rigid.position);
+                        fireflies->updateCurrentOrientation(order[0], tmp_3.c.ligands[i].rigid.orientation);
+                        for (int z = 0; z < tmp_3.c.ligands[i].torsions.size(); z++)
+                            fireflies->updateCurrentTorsion(order[0], tmp_3.c.ligands[i].torsions[z], z);
+
+                        fireflies->updateGlobalBestFit(tmp_3.e);
+
+                        firefly::gbest_position = tmp_3.c.ligands[i].rigid.position;
+                        firefly::gbest_orientation = tmp_3.c.ligands[i].rigid.orientation;
+                        for (int z = 0; z < tmp_3.c.ligands[i].torsions.size(); z++)
+                            firefly::gbest_torsion[z] = tmp_3.c.ligands[i].torsions[z];
+                        
+                        success_ori = true;
+                        break;
+                    }
+                }
+
+                if (success_ori == false)
+                {
+                    fireflies->updateCurrentOrientation(order[0], original_orientation);
+                }
+
+
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
                     candidate_1.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];
@@ -256,7 +426,7 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                     candidate.c.ligands[i].rigid.position = fireflies->getCurrentPosition(y);
                     candidate.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(y);
                     for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
-                        candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(i, z);
+                        candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(y, z);
 
                     quasi_newton_par(tmp_m, p, ig, candidate, g, v, shrink);
 
@@ -271,22 +441,25 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
 
                         if (tmp_2.e < PersonalBest[y])
                         {
+                            PersonalBest[y] = tmp_2.e;
+                            fireflies->updateCurrentFit(y, tmp_2.e);
                             fireflies->updateCurrentPosition(y, tmp_2.c.ligands[i].rigid.position);
                             fireflies->updateCurrentOrientation(y, tmp_2.c.ligands[i].rigid.orientation);
                             for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
                                 fireflies->updateCurrentTorsion(y, tmp_2.c.ligands[i].torsions[z], z);
 
                             //set the global best(energy value and position);
-                            if (tmp_2.e < firefly::gbest_fit)
-                            {
-                                //std::cout << "current_T:" << candidate.e << "	quasi_e:"<<candidate.e<< "	the current best_T:" << firefly::gbest_fit<<"	Current number step"<<step <<'\n';
-                                fireflies->updateGlobalBestFit(tmp_2.e);
+                            
+                        }
 
-                                firefly::gbest_position = tmp_2.c.ligands[i].rigid.position;
-                                firefly::gbest_orientation = tmp_2.c.ligands[i].rigid.orientation;
-                                for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
-                                    firefly::gbest_torsion[z] = tmp_2.c.ligands[i].torsions[z];
-                            }
+                        if (tmp_2.e < firefly::gbest_fit)
+                        {
+                            fireflies->updateGlobalBestFit(tmp_2.e);
+                            fireflies->updateGlobalBestFirefly(y);
+                            firefly::gbest_position = tmp_2.c.ligands[i].rigid.position;
+                            firefly::gbest_orientation = tmp_2.c.ligands[i].rigid.orientation;
+                            for (int z = 0; z < tmp_2.c.ligands[i].torsions.size(); z++)
+                                firefly::gbest_torsion[z] = tmp_2.c.ligands[i].torsions[z];
                         }
                     }
                 }
@@ -304,14 +477,61 @@ void firefly_mutate_conf(output_type &candidate, output_type &candidate_1, const
                             order[u] = temp;
                         }
 
+                update_2_and_3(i, order[0], fireflies, candidate_2, candidate_3, candidate);
+                std::cout << "a2" << '\n';
                 for (int k = 0; k < fireflies->number; k++)
                     for (int j = 0; j < fireflies->number; j++)
                         if (fireflies->getCurrentFit(k) > fireflies->getCurrentFit(order[j]))
                         {
                             fireflies->moveFireflyTorsion(order[j], k, generator, which);
+                            //fireflies->moveFireflyTorsion(order[0], k, generator, which);
+                            //fireflies->moveFireflyTorsion1(order[j], k, which);
                         }
 
-                fireflies->moveFireflyTorsionRandomly(order[0], generator, which);
+                //fireflies->moveFireflyTorsionRandomly(order[0], generator, which);
+
+                fl original_torsion = fireflies->getCurrentTorsion(order[0], which);
+                bool success_tor = false;
+                
+                for (int x = 0; x < 20; x++)
+                {
+                    fireflies->updateCurrentTorsion(order[0], original_torsion, which);
+                    fireflies->moveFireflyTorsionRandomly(order[0], generator, which);
+
+                    output_type tmp_3 = candidate;
+
+                    tmp_3.c.ligands[i].rigid.position = fireflies->getCurrentPosition(order[0]);
+                    tmp_3.c.ligands[i].rigid.orientation = fireflies->getCurrentOrientation(order[0]);
+                    for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
+                        tmp_3.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(order[0], z);
+
+                    quasi_newton_par(tmp_m, p, ig, tmp_3, g, v, true);
+
+                    if (tmp_3.e < firefly::gbest_fit)
+                    {
+                        PersonalBest[order[0]] = tmp_3.e;
+                        fireflies->updateCurrentFit(order[0], tmp_3.e);
+                        fireflies->updateCurrentPosition(order[0], tmp_3.c.ligands[i].rigid.position);
+                        fireflies->updateCurrentOrientation(order[0], tmp_3.c.ligands[i].rigid.orientation);
+                        for (int z = 0; z < tmp_3.c.ligands[i].torsions.size(); z++)
+                            fireflies->updateCurrentTorsion(order[0], tmp_3.c.ligands[i].torsions[z], z);
+
+                        fireflies->updateGlobalBestFit(tmp_3.e);
+
+                        firefly::gbest_position = tmp_3.c.ligands[i].rigid.position;
+                        firefly::gbest_orientation = tmp_3.c.ligands[i].rigid.orientation;
+                        for (int z = 0; z < tmp_3.c.ligands[i].torsions.size(); z++)
+                            firefly::gbest_torsion[z] = tmp_3.c.ligands[i].torsions[z];
+                        
+                        success_tor = true;
+                        break;
+                    }
+                }
+
+                if (success_tor == false)
+                {
+                    fireflies->updateCurrentTorsion(order[0], original_torsion, which);
+                }
 
                 for (int z = 0; z < candidate.c.ligands[i].torsions.size(); z++)
                     candidate_1.c.ligands[i].torsions[z] = firefly::gbest_torsion[z];

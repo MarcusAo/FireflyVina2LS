@@ -225,28 +225,60 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 		log << "Using random seed: " << seed;
 		log.endl();
 		output_container out_cont;
+		output_container out_cont_2;
+		output_container out_cont_3;
 
-				if(!out_cont.empty()) {
+		if(!out_cont.empty()) {
 			log.setf(std::ios::fixed, std::ios::floatfield);
 			log.setf(std::ios::showpoint);
 			log << '\n';
+		}
 
+		if(!out_cont_2.empty()) {
+			log.setf(std::ios::fixed, std::ios::floatfield);
+			log.setf(std::ios::showpoint);
+			log << '\n';
+		}
+		if(!out_cont_3.empty()) {
+			log.setf(std::ios::fixed, std::ios::floatfield);
+			log.setf(std::ios::showpoint);
+			log << '\n';
 		}
 
 		doing(verbosity, "Performing search", log);
-		par(m, out_cont, prec, ig, prec_widened, ig_widened, corner1, corner2, generator, num_fireflies, gamma, beta, alpha, mu1, mu2);
+		par(
+			m, 
+			out_cont,
+			out_cont_2,
+			out_cont_3, 
+			prec, ig, prec_widened, ig_widened, corner1, corner2, generator, num_fireflies, gamma, beta, alpha, mu1, mu2);
 		done(verbosity, log);
 
-if(!out_cont.empty()) {
+		if(!out_cont.empty()) {
 			log.setf(std::ios::fixed, std::ios::floatfield);
 			log.setf(std::ios::showpoint);
 			log << '\n';
+		}
 
+		if(!out_cont_2.empty()) {
+			log.setf(std::ios::fixed, std::ios::floatfield);
+			log.setf(std::ios::showpoint);
+			log << '\n';
+		}
+
+		if(!out_cont_3.empty()) {
+			log.setf(std::ios::fixed, std::ios::floatfield);
+			log.setf(std::ios::showpoint);
+			log << '\n';
 		}
 
 		doing(verbosity, "Refining results", log);
 		VINA_FOR_IN(i, out_cont)
 			refine_structure(m, prec, nc, out_cont[i], authentic_v, par.firefly.ssd_par.evals/*FireflyVina*/);
+		VINA_FOR_IN(i, out_cont_2)
+			refine_structure(m, prec, nc, out_cont_2[i], authentic_v, par.firefly.ssd_par.evals/*FireflyVina*/);
+		VINA_FOR_IN(i, out_cont_3)
+			refine_structure(m, prec, nc, out_cont_3[i], authentic_v, par.firefly.ssd_par.evals/*FireflyVina*/);
 
 		if(!out_cont.empty()) {
 			out_cont.sort();
@@ -258,8 +290,30 @@ if(!out_cont.empty()) {
 			out_cont.sort();
 		}
 
+		if(!out_cont_2.empty()) {
+			out_cont_2.sort();
+			const fl best_mode_intramolecular_energy = m.eval_intramolecular(prec, authentic_v, out_cont_2[0].c);
+			VINA_FOR_IN(i, out_cont_2)
+				if(not_max(out_cont_2[i].e))
+					out_cont_2[i].e = m.eval_adjusted(sf, prec, nc, authentic_v, out_cont_2[i].c, best_mode_intramolecular_energy); 
+			// the order must not change because of non-decreasing g (see paper), but we'll re-sort in case g is non strictly increasing
+			out_cont_2.sort();
+		}
+
+		if(!out_cont_3.empty()) {
+			out_cont_3.sort();
+			const fl best_mode_intramolecular_energy = m.eval_intramolecular(prec, authentic_v, out_cont_3[0].c);
+			VINA_FOR_IN(i, out_cont_3)
+				if(not_max(out_cont_3[i].e))
+					out_cont_3[i].e = m.eval_adjusted(sf, prec, nc, authentic_v, out_cont_3[i].c, best_mode_intramolecular_energy); 
+			// the order must not change because of non-decreasing g (see paper), but we'll re-sort in case g is non strictly increasing
+			out_cont_3.sort();
+		}
+
 		const fl out_min_rmsd = 1;
 		out_cont = remove_redundant(out_cont, out_min_rmsd);
+		out_cont_2 = remove_redundant(out_cont_2, out_min_rmsd);
+		out_cont_3 = remove_redundant(out_cont_3, out_min_rmsd);
 
 		done(verbosity, log);
 
@@ -273,6 +327,14 @@ if(!out_cont.empty()) {
 		model best_mode_model = m;
 		if(!out_cont.empty())
 			best_mode_model.set(out_cont.front().c);
+
+		model best_mode_model_2 = m;
+		if(!out_cont_2.empty())
+			best_mode_model_2.set(out_cont_2.front().c);
+
+		model best_mode_model_3 = m;
+		if(!out_cont_3.empty())
+			best_mode_model_3.set(out_cont_3.front().c);
 
 		sz how_many = 0;
 		std::vector<std::string> remarks;
@@ -291,8 +353,46 @@ if(!out_cont.empty()) {
 			remarks.push_back(vina_remark(out_cont[i].e, lb, ub));
 			log.endl();
 		}
+
+		sz how_many_2 = 0;
+		std::vector<std::string> remarks_2;
+		VINA_FOR_IN(i, out_cont_2) {
+			if(how_many_2 >= num_modes || !not_max(out_cont_2[i].e) || out_cont_2[i].e > out_cont_2[0].e + energy_range) break; // check energy_range sanity FIXME
+			++how_many_2;
+			log << std::setw(4) << i+1
+				<< "    " << std::setw(9) << std::setprecision(9) << out_cont[i].e; // intermolecular_energies[i];
+			m.set(out_cont_2[i].c);
+			const model& r = ref ? ref.get() : best_mode_model_2;
+			const fl lb = m.rmsd_lower_bound(r);
+			const fl ub = m.rmsd_upper_bound(r);
+			log << "  " << std::setw(9) << std::setprecision(3) << lb
+			    << "  " << std::setw(9) << std::setprecision(3) << ub; // FIXME need user-readable error messages in case of failures
+
+			remarks_2.push_back(vina_remark(out_cont_2[i].e, lb, ub));
+			log.endl();
+		}
+
+		sz how_many_3 = 0;
+		std::vector<std::string> remarks_3;
+		VINA_FOR_IN(i, out_cont_3) {
+			if(how_many_3 >= num_modes || !not_max(out_cont_3[i].e) || out_cont_3[i].e > out_cont_3[0].e + energy_range) break; // check energy_range sanity FIXME
+			++how_many_3;
+			log << std::setw(4) << i+1
+				<< "    " << std::setw(9) << std::setprecision(9) << out_cont[i].e; // intermolecular_energies[i];
+			m.set(out_cont_3[i].c);
+			const model& r = ref ? ref.get() : best_mode_model_3;
+			const fl lb = m.rmsd_lower_bound(r);
+			const fl ub = m.rmsd_upper_bound(r);
+			log << "  " << std::setw(9) << std::setprecision(3) << lb
+			    << "  " << std::setw(9) << std::setprecision(3) << ub; // FIXME need user-readable error messages in case of failures
+
+			remarks_3.push_back(vina_remark(out_cont_3[i].e, lb, ub));
+			log.endl();
+		}
 		doing(verbosity, "Writing output", log);
-		write_all_output(m, out_cont, how_many, out_name, remarks);
+		write_all_output(m, out_cont, how_many, out_name + "_1.pdbqt", remarks);
+		write_all_output(m, out_cont_2, how_many_2, out_name + "_2.pdbqt", remarks_2);
+		write_all_output(m, out_cont_3, how_many_3, out_name + "_3.pdbqt", remarks_3);
 		done(verbosity, log);
 
 		if(how_many < 1) {

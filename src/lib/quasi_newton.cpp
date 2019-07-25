@@ -41,6 +41,12 @@ void quasi_newton::operator()(model& m, const precalculate& p, const igrid& ig, 
 	out.e = res;
 }
 
+void quasi_newton::operator()(model& m, const precalculate& p, const igrid& ig, output_type& out, change& g, const vec& v, bool is_one_step) const { // g must have correct size
+	quasi_newton_aux aux(&m, &p, &ig, v);
+	fl res = bfgs(aux, out.c, g, 1, average_required_improvement, 10);
+	out.e = res;
+}
+
 void quasi_newton::operator()(model& m, const precalculate& p, const igrid& ig, output_type& out, change& g, const vec& v, int shrink) const { // g must have correct size
 	quasi_newton_aux aux(&m, &p, &ig, v);
 	fl res = bfgs(aux, out.c, g, (max_steps*shrink)/10, average_required_improvement, 10);

@@ -43,7 +43,7 @@ class firefly
     static fl *gbest_torsion;    //global best of degree of freedom vector
 
     static double gbest_fit; //global best values
-
+    static int gbest_firefly;
     std::vector<lampyridae> fireflies;
 
     double R1Max_;
@@ -58,12 +58,17 @@ class firefly
     void moveFireflyOrientation(int, int, rng &);
     void moveFireflyTorsion(int, int, rng &, sz);
 
+    void moveFireflyPosition1(int, int);
+    void moveFireflyOrientation1(int, int);
+    void moveFireflyTorsion1(int, int, sz);
+
     void moveFireflyPositionRandomly(int, rng &);
     void moveFireflyOrientationRandomly(int, rng &);
     void moveFireflyTorsionRandomly(int, rng &, sz);
 
     void updateGlobalBest(int);
     void updateGlobalBestFit(double);
+    void updateGlobalBestFirefly(int);
 
     double getCurrentFit(int);
 

@@ -7,6 +7,7 @@ fl *firefly::gbest_torsion;
 vec firefly::gbest_position;
 
 double firefly::gbest_fit;
+int firefly::gbest_firefly;
 
 firefly::firefly(int num_fireflies, double gamma, double beta, double alpha, double mu1, double mu2, const vec corner1, const vec corner2, rng &g, conf &c)
 {
@@ -29,7 +30,7 @@ firefly::firefly(int num_fireflies, double gamma, double beta, double alpha, dou
     this->R1Min_ = 0;
     this->R2Max_ = 1;
     this->R2Min_ = 0;
-    this->lbeta = 1.5;
+    this->lbeta = 1.8;
     this->sigma_u = pow(tgamma(1+this->lbeta)*sin(pi*this->lbeta/2)/(tgamma((1+this->lbeta)/2)*this->lbeta*pow(2,((this->lbeta-1)/2))),1/this->lbeta);
     this->sigma_v = 1;
     firefly::gbest_torsion = new fl[torsionSize];
@@ -127,6 +128,32 @@ void firefly::moveFireflyPosition(int master, int slave, rng &generator)
         fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
 }
 
+void firefly::moveFireflyPosition1(int master, int slave)
+{
+    vec master_pos = fireflies[master].current_position;
+    vec slave_pos = fireflies[slave].current_position;
+
+    fireflies[slave].current_position[0] += beta * (master_pos[0] - slave_pos[0]);
+    
+    fireflies[slave].current_position[1] += beta * (master_pos[1] - slave_pos[1]);
+    
+    fireflies[slave].current_position[2] += beta * (master_pos[2] - slave_pos[2]);
+
+    if (fireflies[slave].current_position[0] < corner1[0])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+    if (fireflies[slave].current_position[1] < corner1[1])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+    if (fireflies[slave].current_position[2] < corner1[2])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+
+    if (fireflies[slave].current_position[0] > corner2[0])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+    if (fireflies[slave].current_position[1] > corner2[1])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+    if (fireflies[slave].current_position[2] > corner2[2])
+        fireflies[slave].current_position = random_in_box(this->corner1, this->corner2, this->g);
+}
+
 double firefly::levy(rng &generator)
 {
     //double u = random_normal(0,pow(sigma_u,2), generator);
@@ -149,6 +176,14 @@ void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
     quaternion_increment(fireflies[slave].current_orientation, vec(alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator)));
 }
 
+void firefly::moveFireflyOrientation1(int master, int slave)
+{
+    qt master_ori = fireflies[master].current_orientation;
+    qt slave_ori = fireflies[slave].current_orientation;
+    
+    quaternion_increment(fireflies[slave].current_orientation, beta * quaternion_to_angle(master_ori - slave_ori));
+}
+
 void firefly::moveFireflyOrientationRandomly(int index, rng &generator)
 {
     quaternion_increment(fireflies[index].current_orientation, vec(alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator), alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator)));
@@ -165,6 +200,13 @@ void firefly::moveFireflyTorsion(int master, int slave, rng &generator, sz which
     fl slave_tor = fireflies[slave].current_torsion[which];
     fl distance_sqr = sqr(master_tor - slave_tor);
     fireflies[slave].current_torsion[which] += beta * (master_tor - slave_tor) * std::exp(gamma * distance_sqr * (-1)) + alpha * sign(random_fl(0, 1, generator)-0.5)*levy(generator);
+}
+
+void firefly::moveFireflyTorsion1(int master, int slave, sz which)
+{
+    fl master_tor = fireflies[master].current_torsion[which];
+    fl slave_tor = fireflies[slave].current_torsion[which];
+    fireflies[slave].current_torsion[which] += beta * (master_tor - slave_tor);
 }
 
 vec firefly::getCurrentPosition(int i)
@@ -215,6 +257,11 @@ void firefly::updateCurrentTorsion(int i, fl torsion, sz which)
 void firefly::updateGlobalBestFit(double e)
 {
     firefly::gbest_fit = e;
+}
+
+void firefly::updateGlobalBestFirefly(int num)
+{
+    firefly::gbest_firefly = num;
 }
 
 void firefly::updatePersonalBest(int i, double e)

@@ -7,6 +7,8 @@ struct parallel_firefly_task
 {
     model m;
     output_container out;
+    output_container out_2;
+    output_container out_3;
     rng generator;
     parallel_firefly_task(const model &m_, int seed) : m(m_), generator(static_cast<rng::result_type>(seed)) {}
 };
@@ -57,6 +59,8 @@ struct parallel_firefly_aux
     {
         (*firefly)(t.m,
                    t.out,
+                   t.out_2,
+                   t.out_3,
                    *p,
                    *ig,
                    *p_widened,
@@ -88,8 +92,26 @@ void merge_output_containers(const parallel_firefly_task_container &many, output
     out.sort();
 }
 
+void merge_output_containers2(const parallel_firefly_task_container &many, output_container &out, fl min_rmsd, sz max_size)
+{
+    min_rmsd = 2; // FIXME? perhaps it's necessary to separate min_rmsd during search and during output?
+    VINA_FOR_IN(i, many)
+    merge_output_containers(many[i].out_2, out, min_rmsd, max_size);
+    out.sort();
+}
+
+void merge_output_containers3(const parallel_firefly_task_container &many, output_container &out, fl min_rmsd, sz max_size)
+{
+    min_rmsd = 2; // FIXME? perhaps it's necessary to separate min_rmsd during search and during output?
+    VINA_FOR_IN(i, many)
+    merge_output_containers(many[i].out_3, out, min_rmsd, max_size);
+    out.sort();
+}
+
 void parallel_firefly::operator()(const model &m,
                                   output_container &out,
+                                  output_container &out_2,
+                                  output_container &out_3,
                                   const precalculate &p,
                                   const igrid &ig,
                                   const precalculate &p_widened,
@@ -105,20 +127,23 @@ void parallel_firefly::operator()(const model &m,
                                   double mu2) const
 {
     parallel_progress pp;
-    parallel_firefly_aux parallel_firefly_aux_instance(&firefly,
-                                                       &p,
-                                                       &ig,
-                                                       &p_widened,
-                                                       &ig_widened,
-                                                       &corner1,
-                                                       &corner2,
-                                                       (display_progress ? (&pp) : NULL),
-                                                       num_of_fireflies,
-                                                       gamma,
-                                                       beta,
-                                                       alpha,
-                                                       mu1,
-                                                       mu2);
+    parallel_firefly_aux parallel_firefly_aux_instance(
+        &firefly,
+        &p,
+        &ig,
+        &p_widened,
+        &ig_widened,
+        &corner1,
+        &corner2,
+        (display_progress ? (&pp) : NULL),
+        num_of_fireflies,
+        gamma,
+        beta,
+        alpha,
+        mu1,
+        mu2
+    );
+
     parallel_firefly_task_container task_container;
     VINA_FOR(i, num_tasks)
     task_container.push_back(new parallel_firefly_task(m, random_int(0, 1000000, generator)));
@@ -127,4 +152,6 @@ void parallel_firefly::operator()(const model &m,
     parallel_iter<parallel_firefly_aux, parallel_firefly_task_container, parallel_firefly_task, true> parallel_iter_instance(&parallel_firefly_aux_instance, num_threads);
     parallel_iter_instance.run(task_container);
     merge_output_containers(task_container, out, firefly.min_rmsd, firefly.num_saved_mins);
+    merge_output_containers2(task_container, out_2, firefly.min_rmsd, firefly.num_saved_mins);
+    merge_output_containers3(task_container, out_3, firefly.min_rmsd, firefly.num_saved_mins);
 }

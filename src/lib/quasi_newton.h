@@ -31,6 +31,7 @@ struct quasi_newton {
 	quasi_newton() : max_steps(1000), average_required_improvement(0.0) {}
 	// clean up
 	void operator()(model& m, const precalculate& p, const igrid& ig, output_type& out, change& g, const vec& v) const; // g must have correct size
+    void operator()(model& m, const precalculate& p, const igrid& ig, output_type& out, change& g, const vec& v, bool is_one_step) const; // g must have correct size
 	void operator()(model& m, const precalculate& p, const igrid& ig, output_type& out, change& g, const vec& v, int) const;
 	};
 

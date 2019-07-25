@@ -12,6 +12,8 @@ struct parallel_firefly
         parallel_firefly() : num_tasks(8), num_threads(1), display_progress(true) {}
         void operator()(const model &m,
                         output_container &out,
+                        output_container &out_2,
+                        output_container &out_3,
                         const precalculate &p,
                         const igrid &ig,
                         const precalculate &p_widened,
