@@ -12,9 +12,10 @@ RELEASE NOTES:
 - FireflyVina2LS was developed based on the framework of PSOVina2LS. 
   For more information about Vina, please visit http://vina.scripps.edu. 
 
-=======================================================================
 
+## Instructions:
 0. REQUIRED SOFTWARE
+
    For successful compilation, please install Boost (version 1.59.0) 
    from http://www.boost.org. For preparing molecules for docking, 
    please install AutoDockTools (ADT) from http://mgltools.scripps.edu.
