@@ -129,6 +129,7 @@ void firefly_mutate_conf(
     //chaotic 
     //double temp = fireflies->gamma;   
     fireflies->gamma = fireflies->mu1 * fireflies->gamma * (1-fireflies->gamma);
+
     //fireflies->beta = fireflies->mu1 * fireflies->beta * (1-fireflies->beta);
     //fireflies->beta = std::exp(1) - 4.9 * fireflies->beta * fireflies->beta - 0.58;
     //fireflies->gamma = std::exp(1) - 4.9 * fireflies->gamma * fireflies->gamma - 0.58;

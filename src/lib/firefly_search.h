@@ -31,7 +31,8 @@ struct firefly_search
                            double beta,
                            double alpha,
                            double mu1,
-                           double mu2) const;
+                           double mu2,
+                           double lambda) const;
     // out is sorted
     void operator()(model &m,
                     output_container &out,
@@ -50,7 +51,8 @@ struct firefly_search
                     double beta,
                     double alpha,
                     double mu1,
-                    double mu2) const;
+                    double mu2,
+                    double lambda) const;
 };
 
 #endif

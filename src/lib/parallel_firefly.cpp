@@ -25,7 +25,7 @@ struct parallel_firefly_aux
     const vec *corner1;
     const vec *corner2;
     const int num_of_fireflies;
-    const double gamma, beta, alpha, mu1, mu2;
+    const double gamma, beta, alpha, mu1, mu2, lambda;
     parallel_progress *pg;
     parallel_firefly_aux(const firefly_search *firefly_,
                          const precalculate *p_,
@@ -40,7 +40,8 @@ struct parallel_firefly_aux
                          double beta_,
                          double alpha_,
                          double mu1_,
-                         double mu2_) : 
+                         double mu2_,
+                         double lambda_) : 
                          firefly(firefly_), 
                          p(p_), 
                          ig(ig_), 
@@ -53,7 +54,8 @@ struct parallel_firefly_aux
                          beta(beta_), 
                          alpha(alpha_), 
                          mu1(mu1_), 
-                         mu2(mu2_) {}
+                         mu2(mu2_),
+                         lambda(lambda_) {}
 
     void operator()(parallel_firefly_task &t) const
     {
@@ -74,7 +76,8 @@ struct parallel_firefly_aux
                    beta,
                    alpha,
                    mu1,
-                   mu2);
+                   mu2,
+                   lambda);
     }
 };
 
@@ -124,7 +127,8 @@ void parallel_firefly::operator()(const model &m,
                                   double beta,
                                   double alpha,
                                   double mu1,
-                                  double mu2) const
+                                  double mu2,
+                                  double lambda) const
 {
     parallel_progress pp;
     parallel_firefly_aux parallel_firefly_aux_instance(
@@ -141,8 +145,10 @@ void parallel_firefly::operator()(const model &m,
         beta,
         alpha,
         mu1,
-        mu2
+        mu2,
+        lambda
     );
+
 
     parallel_firefly_task_container task_container;
     VINA_FOR(i, num_tasks)
