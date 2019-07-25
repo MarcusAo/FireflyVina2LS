@@ -1,5 +1,4 @@
-=======================================================================
-FireflyVina2LS version 1.0                                                    
+# FireflyVina2LS                                                 
 Marcus M. C. Ao & Shirley W. I. Siu                                   
 
 Computational Biology and Bioinformatics Lab (CBBio)                        
@@ -7,7 +6,6 @@ Department of Computer and Information Science (CIS)
 University of Macau (UM) 
                                                                        
 http://cbbio.cis.umac.mo
-=======================================================================
 
 RELEASE NOTES: 
 
