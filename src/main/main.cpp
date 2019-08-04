@@ -361,7 +361,7 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 			if(how_many_2 >= num_modes || !not_max(out_cont_2[i].e) || out_cont_2[i].e > out_cont_2[0].e + energy_range) break; // check energy_range sanity FIXME
 			++how_many_2;
 			log << std::setw(4) << i+1
-				<< "    " << std::setw(9) << std::setprecision(9) << out_cont[i].e; // intermolecular_energies[i];
+				<< "    " << std::setw(9) << std::setprecision(9) << out_cont_2[i].e; // intermolecular_energies[i];
 			m.set(out_cont_2[i].c);
 			const model& r = ref ? ref.get() : best_mode_model_2;
 			const fl lb = m.rmsd_lower_bound(r);
@@ -379,7 +379,7 @@ void do_search(model& m, const boost::optional<model>& ref, const scoring_functi
 			if(how_many_3 >= num_modes || !not_max(out_cont_3[i].e) || out_cont_3[i].e > out_cont_3[0].e + energy_range) break; // check energy_range sanity FIXME
 			++how_many_3;
 			log << std::setw(4) << i+1
-				<< "    " << std::setw(9) << std::setprecision(9) << out_cont[i].e; // intermolecular_energies[i];
+				<< "    " << std::setw(9) << std::setprecision(9) << out_cont_3[i].e; // intermolecular_energies[i];
 			m.set(out_cont_3[i].c);
 			const model& r = ref ? ref.get() : best_mode_model_3;
 			const fl lb = m.rmsd_lower_bound(r);
