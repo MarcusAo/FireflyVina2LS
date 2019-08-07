@@ -51,7 +51,7 @@ public:
   double R2Max_;
   double R2Min_;
 
-  firefly(int, double, double, double, double, double, double, const vec, const vec, rng &, conf &);
+  firefly(int, double, double, double, double, double, double, int, int, int, int, const vec, const vec, rng &, conf &);
   void init(rng &, conf &);
 
   void moveFireflyPosition(int, int, rng &);
