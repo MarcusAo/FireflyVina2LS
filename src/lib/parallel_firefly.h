@@ -25,9 +25,13 @@ struct parallel_firefly
                         double gamma,
                         double beta,
                         double alpha,
-                        double mu1, 
+                        double mu1,
                         double mu2,
-                        double lambda) const;
+                        double lambda,
+                        int clustering,
+                        int levy_flight,
+                        int chaos,
+                        int elite) const;
 };
 
 #endif

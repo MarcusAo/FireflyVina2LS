@@ -24,7 +24,7 @@ struct parallel_firefly_aux
     const igrid *ig_widened;
     const vec *corner1;
     const vec *corner2;
-    const int num_of_fireflies;
+    const int num_of_fireflies, clustering, levy_flight, chaos, elite;
     const double gamma, beta, alpha, mu1, mu2, lambda;
     parallel_progress *pg;
     parallel_firefly_aux(const firefly_search *firefly_,
@@ -41,21 +41,28 @@ struct parallel_firefly_aux
                          double alpha_,
                          double mu1_,
                          double mu2_,
-                         double lambda_) : 
-                         firefly(firefly_), 
-                         p(p_), 
-                         ig(ig_), 
-                         p_widened(p_widened_), 
-                         ig_widened(ig_widened_), 
-                         corner1(corner1_), 
-                         corner2(corner2_), pg(pg_), 
-                         num_of_fireflies(num_of_fireflies_), 
-                         gamma(gamma_), 
-                         beta(beta_), 
-                         alpha(alpha_), 
-                         mu1(mu1_), 
-                         mu2(mu2_),
-                         lambda(lambda_) {}
+                         double lambda_,
+                         int clustering_,
+                         int levy_flight_,
+                         int chaos_,
+                         int elite_) : firefly(firefly_),
+                                       p(p_),
+                                       ig(ig_),
+                                       p_widened(p_widened_),
+                                       ig_widened(ig_widened_),
+                                       corner1(corner1_),
+                                       corner2(corner2_), pg(pg_),
+                                       num_of_fireflies(num_of_fireflies_),
+                                       gamma(gamma_),
+                                       beta(beta_),
+                                       alpha(alpha_),
+                                       mu1(mu1_),
+                                       mu2(mu2_),
+                                       lambda(lambda_),
+                                       clustering(clustering_),
+                                       levy_flight(levy_flight_),
+                                       chaos(chaos_),
+                                       elite(elite_) {}
 
     void operator()(parallel_firefly_task &t) const
     {
@@ -77,7 +84,11 @@ struct parallel_firefly_aux
                    alpha,
                    mu1,
                    mu2,
-                   lambda);
+                   lambda,
+                   clustering,
+                   levy_flight,
+                   chaos,
+                   elite);
     }
 };
 
@@ -128,7 +139,11 @@ void parallel_firefly::operator()(const model &m,
                                   double alpha,
                                   double mu1,
                                   double mu2,
-                                  double lambda) const
+                                  double lambda,
+                                  int clustering,
+                                  int levy_flight,
+                                  int chaos,
+                                  int elite) const
 {
     parallel_progress pp;
     parallel_firefly_aux parallel_firefly_aux_instance(
@@ -146,9 +161,11 @@ void parallel_firefly::operator()(const model &m,
         alpha,
         mu1,
         mu2,
-        lambda
-    );
-
+        lambda,
+        clustering,
+        levy_flight,
+        chaos,
+        elite);
 
     parallel_firefly_task_container task_container;
     VINA_FOR(i, num_tasks)
@@ -158,6 +175,9 @@ void parallel_firefly::operator()(const model &m,
     parallel_iter<parallel_firefly_aux, parallel_firefly_task_container, parallel_firefly_task, true> parallel_iter_instance(&parallel_firefly_aux_instance, num_threads);
     parallel_iter_instance.run(task_container);
     merge_output_containers(task_container, out, firefly.min_rmsd, firefly.num_saved_mins);
-    merge_output_containers2(task_container, out_2, firefly.min_rmsd, firefly.num_saved_mins);
-    merge_output_containers3(task_container, out_3, firefly.min_rmsd, firefly.num_saved_mins);
+    if (clustering == 1)
+    {
+        merge_output_containers2(task_container, out_2, firefly.min_rmsd, firefly.num_saved_mins);
+        merge_output_containers3(task_container, out_3, firefly.min_rmsd, firefly.num_saved_mins);
+    }
 }

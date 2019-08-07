@@ -8,19 +8,19 @@
 #include <sstream>
 #include <algorithm>
 
-
 using namespace std;
 
 class Result
 {
-    public:
+public:
     Result(int, int, int);
-     int value1;
-     int value2;
-     int value3;
+    int value1;
+    int value2;
+    int value3;
 };
 
-class Point{
+class Point
+{
 
 private:
     int pointId, clusterId;
@@ -43,8 +43,8 @@ public:
     double getVal(int);
 };
 
-
-class Cluster{
+class Cluster
+{
 
 private:
     int clusterId;
@@ -69,11 +69,11 @@ public:
     void setCentroidByPos(int, double);
 };
 
-class KMeans{
+class KMeans
+{
 private:
     int K, iters, dimensions, total_points;
     vector<Cluster> clusters;
-    
 
     int getNearestClusterId(Point);
 
@@ -82,7 +82,5 @@ public:
     int a, b, c;
     void run(double[], int);
 };
-
-
 
 #endif

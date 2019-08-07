@@ -19,7 +19,11 @@ output_type firefly_search::operator()(model &m,
                                        double alpha,
                                        double mu1,
                                        double mu2,
-                                       double lambda) const
+                                       double lambda,
+                                       int clustering,
+                                       int levy_flight,
+                                       int chaos,
+                                       int elite) const
 {
     output_container tmp;
     output_container tmp_2;
@@ -42,7 +46,11 @@ output_type firefly_search::operator()(model &m,
                      alpha,
                      mu1,
                      mu2,
-                     lambda); // call the version that produces the whole container
+                     lambda,
+                     clustering,
+                     levy_flight,
+                     chaos,
+                     elite); // call the version that produces the whole container
     VINA_CHECK(!tmp.empty());
     return tmp.front();
 }
@@ -74,7 +82,11 @@ void firefly_search::operator()(model &m,
                                 double alpha,
                                 double mu1,
                                 double mu2,
-                                double lambda) const
+                                double lambda,
+                                int clustering,
+                                int levy_flight,
+                                int chaos,
+                                int elite) const
 {
     vec authentic_v(1000, 1000, 1000); // FIXME? this is here to avoid max_fl/max_fl
     conf_size s = m.get_size();
@@ -93,10 +105,16 @@ void firefly_search::operator()(model &m,
     quasi_newton quasi_newton_par;
     quasi_newton_par.max_steps = ssd_par.evals;
     output_type tmp_rough = tmp;
-    firefly fireflies(num_fireflies, gamma, beta, alpha, mu1, mu2, lambda, corner1, corner2, generator, tmp.c);
-    double* PersonalBest = new double[1000];
-    for(int cou = 0; cou < 1000; cou++)
-		PersonalBest[cou] = 1.7976931348623158e+308;
+    firefly fireflies(num_fireflies, gamma, beta, alpha, mu1, mu2,
+                      lambda,
+                      clustering,
+                      levy_flight,
+                      chaos,
+                      elite,
+                      corner1, corner2, generator, tmp.c);
+    double *PersonalBest = new double[1000];
+    for (int cou = 0; cou < 1000; cou++)
+        PersonalBest[cou] = 1.7976931348623158e+308;
     double energy = 0;
     int count = 0;
 
@@ -115,8 +133,8 @@ void firefly_search::operator()(model &m,
         output_type candidate_3 = tmp_3;
 
         firefly_mutate_conf(
-            candidate, 
-            candidate_1, 
+            candidate,
+            candidate_1,
             candidate_2,
             candidate_3,
             m, mutation_amplitude, generator, &fireflies, PersonalBest, p, ig, g, hunt_cap, quasi_newton_par, step); //for each particle loop
@@ -140,47 +158,48 @@ void firefly_search::operator()(model &m,
             }
         }
 
-        if (step == 0 || metropolis_accept(tmp_2.e, candidate_2.e, temperature, generator))
+        if (clustering == 1)
         {
-            tmp_2 = candidate_2;
-            m.set(tmp_2.c); // FIXME? useless?
-
-            // FIXME only for very promising ones
-            if (tmp_2.e < best_e_2 || out2.size() < num_saved_mins)
+            if (step == 0 || metropolis_accept(tmp_2.e, candidate_2.e, temperature, generator))
             {
-                quasi_newton_par(m, p, ig, tmp_2, g, authentic_v);
+                tmp_2 = candidate_2;
                 m.set(tmp_2.c); // FIXME? useless?
-                tmp_2.coords = m.get_heavy_atom_movable_coords();
-                add_to_output_container(out2, tmp_2, min_rmsd, num_saved_mins); // 20 - max size
-                if (tmp_2.e < best_e_2)
-                    best_e_2 = tmp_2.e;
+
+                // FIXME only for very promising ones
+                if (tmp_2.e < best_e_2 || out2.size() < num_saved_mins)
+                {
+                    quasi_newton_par(m, p, ig, tmp_2, g, authentic_v);
+                    m.set(tmp_2.c); // FIXME? useless?
+                    tmp_2.coords = m.get_heavy_atom_movable_coords();
+                    add_to_output_container(out2, tmp_2, min_rmsd, num_saved_mins); // 20 - max size
+                    if (tmp_2.e < best_e_2)
+                        best_e_2 = tmp_2.e;
+                }
             }
-        }
 
-        if (step == 0 || metropolis_accept(tmp_3.e, candidate_3.e, temperature, generator))
-        {
-            tmp_3 = candidate_3;
-            m.set(tmp_3.c); // FIXME? useless?
-
-            // FIXME only for very promising ones
-            if (tmp_3.e < best_e_3 || out3.size() < num_saved_mins)
+            if (step == 0 || metropolis_accept(tmp_3.e, candidate_3.e, temperature, generator))
             {
-                quasi_newton_par(m, p, ig, tmp_3, g, authentic_v);
+                tmp_3 = candidate_3;
                 m.set(tmp_3.c); // FIXME? useless?
-                tmp_3.coords = m.get_heavy_atom_movable_coords();
-                add_to_output_container(out3, tmp_3, min_rmsd, num_saved_mins); // 20 - max size
-                if (tmp_3.e < best_e_3)
-                    best_e_3 = tmp_3.e;
+
+                // FIXME only for very promising ones
+                if (tmp_3.e < best_e_3 || out3.size() < num_saved_mins)
+                {
+                    quasi_newton_par(m, p, ig, tmp_3, g, authentic_v);
+                    m.set(tmp_3.c); // FIXME? useless?
+                    tmp_3.coords = m.get_heavy_atom_movable_coords();
+                    add_to_output_container(out3, tmp_3, min_rmsd, num_saved_mins); // 20 - max size
+                    if (tmp_3.e < best_e_3)
+                        best_e_3 = tmp_3.e;
+                }
             }
         }
 
         /***Criteria defined by PSOVina***/
-
-        
         if (std::abs(firefly::gbest_fit - energy) < 0.000001)
         {
             //if (step > 2000)
-                //printf("Terminated: %d \n",num_steps);
+            //printf("Terminated: %d \n",num_steps);
             count += 1;
             if (count > 350)
             {
@@ -199,7 +218,7 @@ void firefly_search::operator()(model &m,
         //printf("energy: %f \n", firefly::gbest_fit);
         //energy = firefly::gbest_fit;
         //if (step == 2000)
-            //step = num_steps;
+        //step = num_steps;
 
         /*if (step == num_steps)
         {
@@ -214,7 +233,6 @@ void firefly_search::operator()(model &m,
                     //candidate.c.ligands[i].torsions[z] = fireflies->getCurrentTorsion(i, z);
             }
         }*/
-            
     }
 
     VINA_CHECK(!out.empty());

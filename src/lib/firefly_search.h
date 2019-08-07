@@ -32,7 +32,11 @@ struct firefly_search
                            double alpha,
                            double mu1,
                            double mu2,
-                           double lambda) const;
+                           double lambda,
+                           int clustering,
+                           int levy_flight,
+                           int chaos,
+                           int elite) const;
     // out is sorted
     void operator()(model &m,
                     output_container &out,
@@ -52,7 +56,11 @@ struct firefly_search
                     double alpha,
                     double mu1,
                     double mu2,
-                    double lambda) const;
+                    double lambda,
+                    int clustering,
+                    int levy_flight,
+                    int chaos,
+                    int elite) const;
 };
 
 #endif
