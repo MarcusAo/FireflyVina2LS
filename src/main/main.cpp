@@ -387,14 +387,14 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 		if (!out_cont.empty())
 			best_mode_model.set(out_cont.front().c);
 
+		model best_mode_model_2 = m;
+		model best_mode_model_3 = m;
 		if (clustering == 1)
 		{
-			model best_mode_model_2 = m;
 			if (!out_cont_2.empty())
 				best_mode_model_2.set(out_cont_2.front().c);
 
-			model best_mode_model_3 = m;
-			if (!out_cont_3.empty())
+						if (!out_cont_3.empty())
 				best_mode_model_3.set(out_cont_3.front().c);
 		}
 
@@ -418,6 +418,8 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 			log.endl();
 		}
 
+		doing(verbosity, "Writing output", log);
+		write_all_output(m, out_cont, how_many, out_name + "_1.pdbqt", remarks);
 		if (clustering == 1)
 		{
 			sz how_many_2 = 0;
@@ -459,13 +461,7 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 				remarks_3.push_back(vina_remark(out_cont_3[i].e, lb, ub));
 				log.endl();
 			}
-		}
 
-		doing(verbosity, "Writing output", log);
-		write_all_output(m, out_cont, how_many, out_name + "_1.pdbqt", remarks);
-
-		if (clustering == 1)
-		{
 			write_all_output(m, out_cont_2, how_many_2, out_name + "_2.pdbqt", remarks_2);
 			write_all_output(m, out_cont_3, how_many_3, out_name + "_3.pdbqt", remarks_3);
 		}
