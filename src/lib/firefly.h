@@ -33,6 +33,8 @@ public:
   double sigma_v;
   double sigma_u;
 
+  int chaos, levy_flight, elite, clustering;
+
   rng g;
 
   int number;           //number of firefly
