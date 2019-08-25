@@ -126,10 +126,12 @@ void firefly_mutate_conf(
         //std::cout << "current_alpha:" << fireflies->alpha << '\n';
     
     //chaotic 
-    //double temp = fireflies->gamma;
+    double temp = fireflies->gamma;
     if (fireflies->chaos == 1)  
         fireflies->gamma = fireflies->mu1 * fireflies->gamma * (1-fireflies->gamma);
-   
+    
+    if (fireflies->chaos == 1 && fireflies->levy_flight == 0)
+        fireflies->alpha = fireflies->mu2 * temp * (1-fireflies->alpha);
 
     //fireflies->beta = fireflies->mu1 * fireflies->beta * (1-fireflies->beta);
     //fireflies->beta = std::exp(1) - 4.9 * fireflies->beta * fireflies->beta - 0.58;
