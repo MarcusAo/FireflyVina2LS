@@ -68,10 +68,10 @@ RELEASE NOTES:
      --size_x    33.452 --size_y   27.612  --size_z   35.136  \ 
      --num_modes 1      --cpu 8  
    
-   If you have more CPUs, you can increase the number of particles, 
+   If you have more CPUs, you can increase the number of fireflies, 
    e.g. with availability of 16 CPU, try these options:
 
-   --cpu 16 --num_particles 16
+   --cpu 16 --num_fireflies 16
 
 3. DEVELOP FireflyVina2LS
 

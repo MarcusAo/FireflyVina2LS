@@ -57,6 +57,7 @@
 #include "quasi_newton.h"
 #include "tee.h"
 #include "coords.h" // add_to_output_container
+#include "kmeans.h"
 
 using boost::filesystem::path;
 
@@ -92,12 +93,51 @@ std::string default_output(const std::string &input_name)
 
 void write_all_output(model &m, const output_container &out, sz how_many,
 					  const std::string &output_name,
-					  const std::vector<std::string> &remarks)
+					  const std::vector<std::string> &remarks,
+					  int clustering = 0, int cluster_num = 0)
 {
 	if (out.size() < how_many)
 		how_many = out.size();
 	VINA_CHECK(how_many <= remarks.size());
 	ofile f(make_path(output_name));
+
+	if (clustering == 2)
+	{
+		KMeans kmeans(cluster_num, 100);
+
+		vector<double> all_points[out.size()];
+
+    	int cluster_best;
+		for (int k = 0; k < out.size(); k++)
+		{
+			all_points[k].push_back(out[k].e);
+			for (int e = 0; e < out[k].c.ligands.size(); e++)
+			{
+				all_points[k].push_back(out[k].c.ligands[e].rigid.position.data[0]);
+				all_points[k].push_back(out[k].c.ligands[e].rigid.position.data[1]);
+				all_points[k].push_back(out[k].c.ligands[e].rigid.position.data[3]);
+				all_points[k].push_back(out[k].c.ligands[e].rigid.orientation.R_component_1());
+				all_points[k].push_back(out[k].c.ligands[e].rigid.orientation.R_component_2());
+				all_points[k].push_back(out[k].c.ligands[e].rigid.orientation.R_component_3());
+				all_points[k].push_back(out[k].c.ligands[e].rigid.orientation.R_component_4());
+
+				for (int z = 0; z < out[k].c.ligands[e].torsions.size(); z++)
+					all_points[k].push_back(out[k].c.ligands[e].torsions[z]);
+			}
+		}
+        
+    	kmeans.run(all_points);
+    	cluster_best = kmeans.a;
+
+
+		
+		VINA_FOR(i, 1)
+		{
+			m.set(out[cluster_best].c);
+			m.write_model(f, i + 1, remarks[cluster_best]); // so that model numbers start with 1
+		}
+	}
+
 	VINA_FOR(i, how_many)
 	{
 		m.set(out[i].c);
@@ -189,6 +229,7 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 			   int num_fireflies, double gamma, double beta, double alpha, double mu1, double mu2,
 			   double lambda,
 			   int clustering,
+			   int cluster_num,
 			   int levy_flight,
 			   int chaos,
 			   int elite)
@@ -394,7 +435,7 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 			if (!out_cont_2.empty())
 				best_mode_model_2.set(out_cont_2.front().c);
 
-						if (!out_cont_3.empty())
+			if (!out_cont_3.empty())
 				best_mode_model_3.set(out_cont_3.front().c);
 		}
 
@@ -419,7 +460,7 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 		}
 
 		doing(verbosity, "Writing output", log);
-		write_all_output(m, out_cont, how_many, out_name + "_1.pdbqt", remarks);
+		write_all_output(m, out_cont, how_many, out_name + "_1.pdbqt", remarks, clustering, cluster_num);
 		if (clustering == 1)
 		{
 			sz how_many_2 = 0;
@@ -486,6 +527,7 @@ void main_procedure(model &m, const boost::optional<model> &ref, // m is non-con
 					double mu1, double mu2,
 					double lambda,
 					int clustering,
+					int cluster_num,
 					int levy_flight,
 					int chaos,
 					int elite)
@@ -538,6 +580,7 @@ void main_procedure(model &m, const boost::optional<model> &ref, // m is non-con
 					  seed, verbosity, score_only, local_only, log, t, weights, num_fireflies, gamma, beta, alpha, mu1, mu2,
 					  lambda,
 					  clustering,
+					  cluster_num,
 					  levy_flight,
 					  chaos,
 					  elite);
@@ -559,6 +602,7 @@ void main_procedure(model &m, const boost::optional<model> &ref, // m is non-con
 					  seed, verbosity, score_only, local_only, log, t, weights, num_fireflies, gamma, beta, alpha, mu1, mu2,
 					  lambda,
 					  clustering,
+					  cluster_num,
 					  levy_flight,
 					  chaos,
 					  elite);
@@ -696,7 +740,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 		options_description search_area("Search space (required)");
 		search_area.add_options()("center_x", value<fl>(&center_x), "X coordinate of the center")("center_y", value<fl>(&center_y), "Y coordinate of the center")("center_z", value<fl>(&center_z), "Z coordinate of the center")("size_x", value<fl>(&size_x), "size in the X dimension (Angstroms)")("size_y", value<fl>(&size_y), "size in the Y dimension (Angstroms)")("size_z", value<fl>(&size_z), "size in the Z dimension (Angstroms)");
 		options_description firefly("Firefly parameters (optional)");
-		firefly.add_options()("num_fireflies", value<int>(&num_fireflies)->default_value(16), "Number of fireflies per thread")("gamma", value<double>(&gamma)->default_value(1, "1"), "Absorption coefficient")("beta", value<double>(&beta)->default_value(1, "1"), "Attractiveness")("alpha", value<double>(&alpha)->default_value(0.9, "0.9"), "Randomization parameter")("mu1", value<double>(&mu1)->default_value(4, "4"), "Chaotic parameter")("mu2", value<double>(&mu2)->default_value(4, "4"), "Chaotic parameter")("lambda", value<double>(&lambda)->default_value(1.5, "1.5"), "Levy parameter")("clustering", value<int>(&clustering)->default_value(1, "1"), "Use cluster")("levy_flight", value<int>(&levy_flight)->default_value(1, "1"), "Use Levy flight as random walk")("chaos", value<int>(&chaos)->default_value(1, "1"), "Use chaos map")("elite", value<int>(&elite)->default_value(1, "1"), "Use elite");
+		firefly.add_options()("num_fireflies", value<int>(&num_fireflies)->default_value(16), "Number of fireflies per thread")("gamma", value<double>(&gamma)->default_value(1, "1"), "Absorption coefficient")("beta", value<double>(&beta)->default_value(1, "1"), "Attractiveness")("alpha", value<double>(&alpha)->default_value(0.9, "0.9"), "Randomization parameter")("mu1", value<double>(&mu1)->default_value(4, "4"), "Chaotic parameter")("mu2", value<double>(&mu2)->default_value(4, "4"), "Chaotic parameter")("lambda", value<double>(&lambda)->default_value(1.5, "1.5"), "Levy parameter")("clustering", value<int>(&clustering)->default_value(1, "1"), "Use cluster")("cluster_num", value<int>(&cluster_num)->default_value(3, "3"), "Cluster number")("levy_flight", value<int>(&levy_flight)->default_value(1, "1"), "Use Levy flight as random walk")("chaos", value<int>(&chaos)->default_value(1, "1"), "Use chaos map")("elite", value<int>(&elite)->default_value(1, "1"), "Use elite");
 		//options_description outputs("Output prefixes (optional - by default, input names are stripped of .pdbqt\nare used as prefixes. _001.pdbqt, _002.pdbqt, etc. are appended to the prefixes to produce the output names");
 		options_description outputs("Output (optional)");
 		outputs.add_options()("out", value<std::string>(&out_name), "output models (PDBQT), the default is chosen based on the ligand file name")("log", value<std::string>(&log_name), "optionally, write log file");
@@ -899,6 +943,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 					   cpu, seed, verbosity, max_modes_sz, energy_range, log, num_fireflies, gamma, beta, alpha, mu1, mu2,
 					   lambda,
 					   clustering,
+					   cluster_num,
 					   levy_flight,
 					   chaos,
 					   elite);
