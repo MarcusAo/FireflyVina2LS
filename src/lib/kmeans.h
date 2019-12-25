@@ -26,17 +26,22 @@ private:
     int pointId, clusterId;
     int dimensions;
     vector<double> values;
+    double fit;
 
 public:
     Point(int, string);
 
     Point(int, double);
 
+    Point(int, vector<double>);
+
     int getDimensions();
 
     int getCluster();
 
     int getID();
+    
+    double getFit();
 
     void setCluster(int);
 
@@ -81,6 +86,8 @@ public:
     KMeans(int, int);
     int a, b, c;
     void run(double[], int);
+
+    void run(vector<double>[], int);
 };
 
 #endif

@@ -42,11 +42,19 @@ Point::Point(int id, vector<double> v)
 {
     dimensions = 0;
     pointId = id;
-
-    for(int i=0; i<v.size(); i++) 
+    //std::cout << "id in:" << id << '\n';
+    //std::cout << "v size:" << v.size() << '\n';
+    fit = v[0];
+    for(int i=1; i<v.size(); i++){
+       // std::cout << "v[i]:" << i << "->" << v[i] << '\n';
         values.push_back(v[i]);
-
+        dimensions++;
+        
+    }
+    
+    
     clusterId = 0; //Initially not assigned to any cluster
+    //std::cout << "*********************" << '\n';
 }
 
 int Point::getDimensions()
@@ -57,6 +65,11 @@ int Point::getDimensions()
 int Point::getCluster()
 {
     return clusterId;
+}
+
+double Point::getFit()
+{
+    return fit;
 }
 
 int Point::getID()
@@ -296,18 +309,27 @@ void KMeans::run(double point_fits[], int size)
 }
 
 
-void KMeans::run(vector<double> point_fit[])
+void KMeans::run(vector<double> point_fit[], int size)
 {
     int pointId = 0;
     vector<Point> all_points;
-    for (int x = 0; x < point_fit.size(); x++)
+    //std::cout << "xx:" << size << '\n';
+    for (int x = 0; x < size; x++)
     {
-        Point point(pointId, point_fits[x]);
+        
+        //std::cout << "id:" << pointId << '\n';
+        Point point(pointId, point_fit[x]);
+        //std::cout << "a" << '\n';
         all_points.push_back(point);
+        //std::cout << "b" << '\n';
         pointId++;
+        //std::cout << "d" << '\n';
+        
     }
     total_points = all_points.size();
+    //std::cout << "e" << '\n';
     dimensions = all_points[0].getDimensions();
+    //std::cout << "f" << '\n';
 
     //Initializing Clusters
     vector<int> used_pointIds;
@@ -331,7 +353,6 @@ void KMeans::run(vector<double> point_fit[])
     //cout<<"Clusters initialized = "<<clusters.size()<<endl<<endl;
 
     //cout<<"Running K-Means Clustering.."<<endl;
-
     int iter = 1;
     while (true)
     {
@@ -393,27 +414,37 @@ void KMeans::run(vector<double> point_fit[])
         }
         iter++;
     }
-
-    int r;
+    //std::cout << "h" << '\n';
+    int r = 0;
     //Print pointIds in each cluster
 
 
     int choose_cluster=0;
+    std::cout << "cluster " << choose_cluster << " size: " << clusters[choose_cluster].getSize() << '\n';
     for (int i = 1; i < K; i++)
     {
-        if (clusters[choose_cluster].getSize() > clusters[i].getSize())
+        std::cout << "cluster " << i << " size: " << clusters[i].getSize() << '\n';
+        if (clusters[choose_cluster].getSize() < clusters[i].getSize())
             choose_cluster = i;
     }
-
-    double min = clusters[choose_cluster].getPoint(0).getVal(0);
-    for (int j = 0; j < clusters[choose_cluster].getSize(); j++)
+    
+    double min = clusters[choose_cluster].getPoint(0).getFit();
+    
+    for (int j = 1; j < clusters[choose_cluster].getSize(); j++)
     {
-        if (min > clusters[choose_cluster].getPoint(j).getVal(0))
+        if (min > clusters[choose_cluster].getPoint(j).getFit())
         {
-            min = clusters[choose_cluster].getPoint(j).getVal(0);
+            min = clusters[choose_cluster].getPoint(j).getFit();
             r = clusters[choose_cluster].getPoint(j).getID();
         }
     }
     this->a = r;
-    
+
+     
+    //std::cout << "j" << '\n';
+    std::cout << "choose cluster: " << choose_cluster << '\n';
+
+    /*
+    std::cout << r << '\n';
+    std::cout << min << '\n';*/
 }

@@ -134,7 +134,9 @@ void firefly::moveFireflyPosition(int master, int slave, rng &generator)
     vec master_pos = fireflies[master].current_position;
     vec slave_pos = fireflies[slave].current_position;
     fl distance_sqr = sqr(master_pos[0] - slave_pos[0]) + sqr(master_pos[1] - slave_pos[1]) + sqr(master_pos[2] - slave_pos[2]);
-
+    if (elite == 1)
+        beta = std::exp(std::abs(getCurrentFit(master)-getCurrentFit(slave)))-1;
+    //std::cout << beta << '\n';
     fireflies[slave].current_position[0] += beta * (master_pos[0] - slave_pos[0]) * std::exp(gamma * distance_sqr * (-1)) + alpha * random(generator);
 
     fireflies[slave].current_position[1] += beta * (master_pos[1] - slave_pos[1]) * std::exp(gamma * distance_sqr * (-1)) + alpha * random(generator);
@@ -160,7 +162,8 @@ void firefly::moveFireflyPosition1(int master, int slave)
 {
     vec master_pos = fireflies[master].current_position;
     vec slave_pos = fireflies[slave].current_position;
-
+    if (elite == 1)
+        beta = std::exp(std::abs(getCurrentFit(master)-getCurrentFit(slave)))-1;
     fireflies[slave].current_position[0] += beta * (master_pos[0] - slave_pos[0]);
 
     fireflies[slave].current_position[1] += beta * (master_pos[1] - slave_pos[1]);
@@ -193,9 +196,9 @@ void firefly::moveFireflyOrientation(int master, int slave, rng &generator)
 {
     qt master_ori = fireflies[master].current_orientation;
     qt slave_ori = fireflies[slave].current_orientation;
-
-    //fl distance_sqr = sqr(master_ori.R_component_1() - slave_ori.R_component_1()) + sqr(master_ori.R_component_2() - slave_ori.R_component_2()) + sqr(master_ori.R_component_3() - slave_ori.R_component_3()) + sqr(master_ori.R_component_4() - slave_ori.R_component_4());
-
+    if (elite == 1)
+        beta = std::exp(std::abs(getCurrentFit(master)-getCurrentFit(slave)))-1;
+    
     fl distance_sqr = quaternion_difference(master_ori, slave_ori).norm_sqr();
 
     quaternion_increment(fireflies[slave].current_orientation, beta * quaternion_to_angle(master_ori - slave_ori) * std::exp(gamma * distance_sqr * (-1)));
@@ -207,7 +210,8 @@ void firefly::moveFireflyOrientation1(int master, int slave)
 {
     qt master_ori = fireflies[master].current_orientation;
     qt slave_ori = fireflies[slave].current_orientation;
-
+    if (elite == 1)
+        beta = std::exp(std::abs(getCurrentFit(master)-getCurrentFit(slave)))-1;
     quaternion_increment(fireflies[slave].current_orientation, beta * quaternion_to_angle(master_ori - slave_ori));
 }
 
@@ -226,6 +230,8 @@ void firefly::moveFireflyTorsion(int master, int slave, rng &generator, sz which
     fl master_tor = fireflies[master].current_torsion[which];
     fl slave_tor = fireflies[slave].current_torsion[which];
     fl distance_sqr = sqr(master_tor - slave_tor);
+    if (elite == 1)
+        beta = std::exp(std::abs(getCurrentFit(master)-getCurrentFit(slave)))-1;
     fireflies[slave].current_torsion[which] += beta * (master_tor - slave_tor) * std::exp(gamma * distance_sqr * (-1)) + alpha * random(generator);
 }
 
@@ -233,6 +239,8 @@ void firefly::moveFireflyTorsion1(int master, int slave, sz which)
 {
     fl master_tor = fireflies[master].current_torsion[which];
     fl slave_tor = fireflies[slave].current_torsion[which];
+    if (elite == 1)
+        beta = std::exp(std::abs(getCurrentFit(master)-getCurrentFit(slave)))-1;
     fireflies[slave].current_torsion[which] += beta * (master_tor - slave_tor);
 }
 

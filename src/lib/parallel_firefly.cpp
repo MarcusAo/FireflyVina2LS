@@ -95,12 +95,12 @@ struct parallel_firefly_aux
 void merge_output_containers(const output_container &in, output_container &out, fl min_rmsd, sz max_size)
 {
     VINA_FOR_IN(i, in)
-    add_to_output_container(out, in[i], min_rmsd, max_size);
+        add_to_output_container(out, in[i], min_rmsd, max_size);
 }
 
 void merge_output_containers(const parallel_firefly_task_container &many, output_container &out, fl min_rmsd, sz max_size)
 {
-    min_rmsd = 2; // FIXME? perhaps it's necessary to separate min_rmsd during search and during output?
+    min_rmsd = 0.000001; // FIXME? perhaps it's necessary to separate min_rmsd during search and during output?
     VINA_FOR_IN(i, many)
     merge_output_containers(many[i].out, out, min_rmsd, max_size);
     out.sort();

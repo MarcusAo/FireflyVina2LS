@@ -96,6 +96,7 @@ void write_all_output(model &m, const output_container &out, sz how_many,
 					  const std::vector<std::string> &remarks,
 					  int clustering = 0, int cluster_num = 0)
 {
+	std::cout << "out size final:" << out.size() << '\n';
 	if (out.size() < how_many)
 		how_many = out.size();
 	VINA_CHECK(how_many <= remarks.size());
@@ -103,46 +104,57 @@ void write_all_output(model &m, const output_container &out, sz how_many,
 
 	if (clustering == 2)
 	{
-		KMeans kmeans(cluster_num, 100);
+		KMeans kmeans(cluster_num, 500);
 
 		vector<double> all_points[out.size()];
 
     	int cluster_best;
+		
 		for (int k = 0; k < out.size(); k++)
 		{
 			all_points[k].push_back(out[k].e);
+			
 			for (int e = 0; e < out[k].c.ligands.size(); e++)
 			{
 				all_points[k].push_back(out[k].c.ligands[e].rigid.position.data[0]);
 				all_points[k].push_back(out[k].c.ligands[e].rigid.position.data[1]);
-				all_points[k].push_back(out[k].c.ligands[e].rigid.position.data[3]);
+				all_points[k].push_back(out[k].c.ligands[e].rigid.position.data[2]);
 				all_points[k].push_back(out[k].c.ligands[e].rigid.orientation.R_component_1());
 				all_points[k].push_back(out[k].c.ligands[e].rigid.orientation.R_component_2());
 				all_points[k].push_back(out[k].c.ligands[e].rigid.orientation.R_component_3());
 				all_points[k].push_back(out[k].c.ligands[e].rigid.orientation.R_component_4());
 
+				//std::cout << "torsion size:" << out[k].c.ligands[e].torsions.size() << '\n';
 				for (int z = 0; z < out[k].c.ligands[e].torsions.size(); z++)
 					all_points[k].push_back(out[k].c.ligands[e].torsions[z]);
 			}
+			//std::cout << "k:" << k << '\n';
+			
+			
 		}
         
-    	kmeans.run(all_points);
+    	kmeans.run(all_points, out.size());
     	cluster_best = kmeans.a;
 
-
-		
+		std::cout << "chosen firefly: "<< cluster_best << '\n';
+		//std::cout << remarks.size() << '\n';
+		//std::cout << remarks[cluster_best] << '\n';
 		VINA_FOR(i, 1)
 		{
 			m.set(out[cluster_best].c);
 			m.write_model(f, i + 1, remarks[cluster_best]); // so that model numbers start with 1
 		}
-	}
-
-	VINA_FOR(i, how_many)
+	} else
 	{
-		m.set(out[i].c);
-		m.write_model(f, i + 1, remarks[i]); // so that model numbers start with 1
+		VINA_FOR(i, 1)
+		{
+			m.set(out[i].c);
+			m.write_model(f, i + 1, remarks[i]); // so that model numbers start with 1
+		}
 	}
+	
+
+	
 }
 
 void do_randomization(model &m,
@@ -333,7 +345,6 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 			elite);
 
 		done(verbosity, log);
-
 		if (!out_cont.empty())
 		{
 			log.setf(std::ios::fixed, std::ios::floatfield);
@@ -360,8 +371,9 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 
 		doing(verbosity, "Refining results", log);
 		VINA_FOR_IN(i, out_cont)
-		refine_structure(m, prec, nc, out_cont[i], authentic_v, par.firefly.ssd_par.evals);
+			refine_structure(m, prec, nc, out_cont[i], authentic_v, par.firefly.ssd_par.evals);
 
+		printf("out size c: %d \n", out_cont.size());
 		if (clustering == 1)
 		{
 			VINA_FOR_IN(i, out_cont_2)
@@ -406,7 +418,8 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 			}
 		}
 
-		const fl out_min_rmsd = 1;
+		const fl out_min_rmsd = 0.000001;
+
 		out_cont = remove_redundant(out_cont, out_min_rmsd);
 
 		if (clustering == 1)
@@ -443,8 +456,8 @@ void do_search(model &m, const boost::optional<model> &ref, const scoring_functi
 		std::vector<std::string> remarks;
 		VINA_FOR_IN(i, out_cont)
 		{
-			if (how_many >= num_modes || !not_max(out_cont[i].e) || out_cont[i].e > out_cont[0].e + energy_range)
-				break; // check energy_range sanity FIXME
+			//if (how_many >= num_modes || !not_max(out_cont[i].e) || out_cont[i].e > out_cont[0].e + energy_range)
+				//break; // check energy_range sanity FIXME
 			++how_many;
 			log << std::setw(4) << i + 1
 				<< "    " << std::setw(9) << std::setprecision(9) << out_cont[i].e; // intermolecular_energies[i];
@@ -554,8 +567,8 @@ void main_procedure(model &m, const boost::optional<model> &ref, // m is non-con
 	sz heuristic = m.num_movable_atoms() + 10 * m.get_size().num_degrees_of_freedom();
 	par.firefly.num_steps = unsigned(70 * 3 * (50 + heuristic) / 2);		// 2 * 70 -> 8 * 20 // FIXME/*FireflyVina*/
 	par.firefly.ssd_par.evals = unsigned((25 + m.num_movable_atoms()) / 3); /*FireflyVina*/
-	par.firefly.min_rmsd = 1.0;												/*FireflyVina*/
-	par.firefly.num_saved_mins = 20;										/*FireflyVina*/
+	par.firefly.min_rmsd = 0.000001;												/*FireflyVina*/
+	par.firefly.num_saved_mins = 200;										/*FireflyVina*/
 	par.firefly.hunt_cap = vec(10, 10, 10);									/*FireflyVina*/
 	par.num_tasks = exhaustiveness;
 	par.num_threads = cpu;
@@ -720,7 +733,7 @@ For more information about Vina, please visit http://vina.scripps.edu. \n\
 		fl center_x, center_y, center_z, size_x, size_y, size_z;
 		double gamma = 2.2250738585072014e-308, beta = 2.2250738585072014e-308, alpha = 2.2250738585072014e-308;
 		double mu1 = 2.2250738585072014e-308, mu2 = 2.2250738585072014e-308, lambda = 2.2250738585072014e-308;
-		int cpu = 0, seed, exhaustiveness, verbosity = 2, num_modes = 9, num_fireflies = 0, clustering = 1, levy_flight = 1, chaos = 1, elite = 1;
+		int cpu = 0, seed, exhaustiveness, verbosity = 2, num_modes = 9, num_fireflies = 0, clustering = 1, cluster_num = 3, levy_flight = 1, chaos = 1, elite = 1;
 		fl energy_range = 2.0;
 
 		// -0.035579, -0.005156, 0.840245, -0.035069, -0.587439, 0.05846
