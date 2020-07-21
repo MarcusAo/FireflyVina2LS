@@ -82,11 +82,10 @@ RELEASE NOTES:
 	  src/lib/firefly_mutate.cpp
 
 4. CITATION
-   Please cite our paper if you have used FireflyVina2LS.
 
-   H. K. Tai, H. Lin and S. W. I. Siu, "Improving the efficiency of PSOVina for 
-   protein-ligand docking by two-stage local search," 2016 IEEE Congress on 
-   Evolutionary Computation (CEC), Vancouver, BC, 2016, pp. 770-777.
+   Please cite our paper if you have used FireflyVina2LS.
+   M. C. Ao and S. W. I. Siu, "Evaluating Variants of Firefly Algorithm for Ligand Pose Prediction in Protein-Ligand Docking Program", 
+   12th International Conference on Bioinformatics and Biomedical Technology (ICBBT2020).
 
 5. CONTACT US
     
